@@ -1,6 +1,6 @@
 import unittest
 
-from examplepy.module1 import Number
+from uavdex.module1 import Number
 
 
 class TestSimple(unittest.TestCase):
