@@ -1,0 +1,44 @@
+OVERVIEW:
+
+Data from: https://m-selig.ae.illinois.edu/props/propDB.html
+Many thanks to John Brandt, Robert Deters, Gavin Ananda, Or Dantsker, and Michael Selig for gathering and publishing this data
+
+the files are named:
+ManufacturerType_Diameter(in)xPitch(in)_#Tester_RPM
+
+i.e. ance_8.5x6_2849cm_4000 refers to the aeronaut carbon electric 8.5x6 prop in test #2849 by Craig McGrath (cm) at 4000 RPM
+
+ance: aeronaut carbon electric
+apccf: apc carbon fiber
+apcsf: apc slow flyer
+apcsp: apc sport
+apce:  apc thin electric
+apcff: apc free flight
+grcp: Graupner CAM prop
+grcsp: Graupner CAM slim
+grsn: Graupner Super Nylon 
+gwsdd: GWS direct drive
+gwssf: GWS slow flyer
+kavfk: Kavon FK
+kyosho: Kyosho
+ma: Master Airscrew
+mae: Master Airscrew electric
+magf: Master Airscrew G/F
+mas: Master Airscrew Scimitar
+rusp: Rev Up Special Prop Series
+zin: Zingali
+cfnq: Crazyflie
+DA4002: DA4002 (self made)
+DA4022: DA4022 (self made)
+DA4052: DA4052 (self made)
+ef: e-flite
+kpf: KP Folding
+mi: Micro Invent 2-blade
+mit: Micro Invent 3-blade
+NR640: NR640 (variable blades)
+pl: Plantraco
+union: Union
+vp: Vapor
+
+
+Some props were variable pitch (i.e. in VOL2) and were tested at different degrees. This was indicated in the filename.

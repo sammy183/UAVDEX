@@ -1,0 +1,2 @@
+﻿Manufacturer,Name,max ns,Imax (A),fPWM (Hz),a_m,a_0,b,c_m,c_0,Weight (g)
+Castle,Phoenix Edge HV 120A,12,150,1.20E+04,0.0086,0.0069,-0.0063,0.00163,0.8803,148.8

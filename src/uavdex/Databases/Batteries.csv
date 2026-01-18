@@ -1,0 +1,8 @@
+﻿Name,Manufacturer,Capacity (mAh),Cell Count,Nominal Voltage (V),Resistance (Ohm),Energy (Wh),Max Continuous Discharge (A),Max Peak Discharge (A),Weight (g)
+Gaoneng_8S_3300,Gaoneng,3300,8,29.6,0.0025,97.68,,,537
+MaxAmps_4S_5450,MaxAmps,5450,4,14.8,0.012,80.66,163.5,654,498
+MaxAmps_12S_2000,MaxAmps,2000,12,44.4,0.036,88.8,54,200,550
+MaxAmps_6S_4500,MaxAmps,4500,6,22.2,0.018,99.9,103.5,450,612
+SMC_6S_4400,SMC,4400,6,22.2,0.018,97.68,,,620
+Zeee_4S_2200,Zeee,2200,4,14.8,0.0064,59.2,,,253
+GensAce_4S_6750,Gens Ace,6750,4,14.8,0.0022,99.9,,,633
