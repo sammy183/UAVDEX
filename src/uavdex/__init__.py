@@ -1,4 +1,4 @@
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 from pathlib import Path
 _uavdex_root = Path(__file__).parent
