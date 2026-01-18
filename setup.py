@@ -6,7 +6,7 @@ long_description = (this_directory / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="uavdex",
-    version="0.1.0",   # REQUIRED — missing version breaks builds
+    version="0.1.2",   # REQUIRED — missing version breaks builds
     author="Samuel Nassau",
     author_email="sammynassau@gmail.com",
     description="Unmanned Aerial Vehicle Design EXploration.",
