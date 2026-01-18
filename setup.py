@@ -12,9 +12,7 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     url='https://github.com/sammy183/UAVDEX',
     project_urls={
-        'Documentation':'',
-        'Bug Reports':'',
-        'Source Code':'',
+        'Source Code':'https://github.com/sammy183/UAVDEX',
     },
     package_dir={'': 'src'},
     packages=setuptools.find_packages(where='src'),
