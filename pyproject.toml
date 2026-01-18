@@ -1,3 +1,33 @@
 [build-system]
 requires = ["setuptools>=46.4.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "uavdex"
+version = "0.0.9"
+authors = [
+  { name="Samuel Noble Nassau", email="sammynassau@gmail.com" },
+]
+description = "Unmanned Aerial Vehicle Design EXploration.\nA Python package for multidisciplinary analysis and optimization of electric group 1-2 UAVs."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "matplotlib",
+    "numpy",
+    "scipy",
+    "gekko",
+    "pandas",
+    "tqdm",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["*"]
