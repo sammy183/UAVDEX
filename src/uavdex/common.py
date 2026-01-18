@@ -30,16 +30,17 @@ With motor, battery, propeller selected:
 import numpy as np
 import pandas as pd
 from uavdex import _uavdex_root
-from performance import *
-from propulsions import *
-# from VSPcontribution.atmosphere import stdatm1976 as atm 
+from uavdex.performance import *
+from uavdex.propulsions import *
+from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
 
 lbfN = 4.44822
 ftm = 0.3048
 
-from pathlib import Path
-_uavdex_root = Path(__file__).parent
+# from pathlib import Path
+# _uavdex_root = Path(__file__).parent
 path_to_data = _uavdex_root / 'Databases/'
+#TODO: change back asap when finishing local tests
 
 class PointDesign:
     def __init__(self):
@@ -91,9 +92,6 @@ class PointDesign:
             batt_data = df.loc[df['Name'] == self.batt_name]
         except:
             raise ValueError('Battery name not recognized; please call .BatteryOptions()')
-        print(path_to_data / 'Batteries.csv')
-        pd.set_option('display.max_columns', None)
-        print(batt_data)
         self.ns = batt_data['Series Cell Count'].values[0]
         self.np = batt_data['Parallel Cell Count'].values[0]
         self.CB = batt_data['Capacity (mAh)'].values[0]
@@ -196,6 +194,11 @@ class PointDesign:
         # dT, Vinf, h, Voc
 
     def PointResult(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True):
+        '''
+        Output an array of:        
+            
+        0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
+        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC'''
         return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose))
     
     # def PointResult(self, Vinf, dT, t, rho = self.rho):

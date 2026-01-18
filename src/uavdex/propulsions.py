@@ -161,7 +161,7 @@ MPH_TO_MPS = 0.44704  # Conversion factor: 1 mph to m/s
 global propQnames
 propQnames = ['Total Thrust (lbf)', 'Total Torque (Nm)', 'RPM', 'Drive Efficiency', 'Propeller Efficiency', 'Gearing Efficiency', 'Motor Efficiency', 'ESC Efficiency', 'Battery Efficiency', 'Mech. Power Out of 1 Motor (W)', 
                    'Elec. Power Into 1 Motor (W)', 'Elec. Power Into 1 ESC (W)', 'Current in 1 Motor (A)', 'Current in 1 ESC (A)', 'Current in Battery (A)',
-                   'Voltage in 1 Motor (V)', 'Voltage in 1 ESC (V)', 'Battery Voltage (V)', 'Voltage Per Cell (V)']
+                   'Voltage in 1 Motor (V)', 'Voltage in 1 ESC (V)', 'Battery Voltage (V)', 'Voltage Per Cell (V)', 'State of Charge']
 
 from uavdex import _uavdex_root
 path_to_data = _uavdex_root / 'Databases/'
@@ -173,6 +173,7 @@ def bisection(low, high, func, *args):
     tol = 1e-3
     max_iter = 100
     for _ in range(max_iter):
+        print(low, high)
         mid = (low + high) / 2
         res_mid = func(mid, *args)
         
@@ -600,13 +601,13 @@ def SimpleRPMeqs_t(RPM, *args):
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
 @njit(fastmath = True)
-def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
+def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, SOC, *args):
     '''
     rho given directly or precalculated from h
     Voc given directly or precalculated from SOC
     TODO: full docstring
-    0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18
-    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc
+    0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
+    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
     ##### Assume ESC efficiency = 0.93 (93%) ##### 
     # note: max ESC efficiency occurs at dT = 1.0
@@ -644,11 +645,11 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
     eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
-    eta_drive = (eta_p*eta_g*eta_m*eta_c/nmot)*eta_b
+    eta_drive = (eta_p*eta_g*eta_m*eta_c)*eta_b
     
     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
     Q *= nmot
-    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc])
+    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
 
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
@@ -695,14 +696,14 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
     eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
-    eta_drive = (eta_p*eta_g*eta_m*eta_c/nmot)*eta_b
+    eta_drive = (eta_p*eta_g*eta_m*eta_c)*eta_b
     
     SOC = 1.0 - (Ib*t)/(3.6*CB*np)
     Voc = VocFunc(SOC, BattType)
     
     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
     Q *= nmot
-    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc])
+    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
 
 
 #%% Non-Numba SimpleRPM functions (one for precalculated Voc one for t)
@@ -741,9 +742,9 @@ def SimpleRPMeqsBase_Voc(RPM, *args):
     rho, Voc precalculated from h and SOC (or given directly)
     TODO: full docstring
     '''
-    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
     J = Uinf/((RPM/60)*d)
-    CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
+    CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
     Ib = (Im*nmot)/eta_c
@@ -757,20 +758,20 @@ def SimpleRPMeqsBase_t(RPM, *args):
     rho precalculated from h and t given to calculate SOC, Voc
     TODO: full docstring
     '''
-    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
     J = Uinf/((RPM/60)*d)
-    CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
+    CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
     Ib = (Im*nmot)/eta_c
-    SOC = 1.0 - (Ib*t)/(3.6*CB*np)
-    Vb = ns*VocFunc(SOC, BattType) - Ib*Rb
+    SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
+    Vb = ns*VocFuncBase(SOC, BattType) - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
     return(RPMcalc, J, CP, Qm, Im, Ib, Vb, Vm)
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
-def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
+def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, SOC, *args):
     '''
     rho given directly or precalculated from h
     Voc given directly or precalculated from SOC
@@ -781,7 +782,7 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -794,13 +795,12 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
         res = RPMcalc - RPM
         return(res)
     
-    # Vbattinit = throttle*3.6*ns
     high = rpm_list[-1]
     low = rpm_list[0]
-    RPM = bisection(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g *args)
+    RPM = bisectionBase(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
     
-    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g *args)
-    CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
+    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
+    CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
     
@@ -811,12 +811,22 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     eta_p = (CT*J)/CP
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
-    eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
-    eta_drive = (eta_p*eta_g*eta_m*eta_c/nmot)*eta_b
+    eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb))
+    eta_drive = eta_p*eta_g*eta_m*eta_c*eta_b # took out divided by nmot, REVIEW later
     
     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
+    
+    # eta_drive_pt2 = (T*Uinf)/(nmot*Pin_c + (Ib**2)*Rb)
+    # print(eta_drive_pt2)
     Q *= nmot
-    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc])
+    
+    # print(Pout)
+    # CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
+    # Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
+    # print(Qm*RPM*np.pi / 30)
+    # print((T/nmot)*Uinf)
+    # print((T*Uinf) / (nmot*Pin_c))
+    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
 
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
@@ -831,7 +841,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -847,29 +857,43 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     # Vbattinit = throttle*3.6*ns
     high = rpm_list[-1]
     low = rpm_list[0]
-    RPM = bisection(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g *args)
+    RPM = bisectionBase(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g, *args)
     
-    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_t(RPM, t, Uinf, dT, rho, eta_c, eta_g *args)
-    CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
+    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
+    if RPM < 0.0:
+        raise ValueError('Infeasible input combination')
+        
+    CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
     
     Pout =  rho*((RPM/60)**3)*(d**5)*CP     # mechanical power out of ONE motor
     Pin_m = Vm*Im                           # electric power into one motor
     Pin_c = Vc*Ic                           # electric power into one controller
-    
+
     eta_p = (CT*J)/CP
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
-    eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
-    eta_drive = (eta_p*eta_g*eta_m*eta_c/nmot)*eta_b
-    
-    SOC = 1.0 - (Ib*t)/(3.6*CB*np)
-    Voc = VocFunc(SOC, BattType)
+    eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb)) # TODO ensure battery efficiency varies with runtime: https://ntrs.nasa.gov/api/citations/20205004497/downloads/Battery_Evaluation_EATS_07_15_20.pdf
+    eta_drive = eta_p*eta_g*eta_m*eta_c*eta_b # took out divided by nmot, REVIEW later
     
     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
+    
+    # eta_drive_pt2 = (T*Uinf)/(nmot*Pin_c + (Ib**2)*Rb)
+    # print(eta_drive_pt2)
     Q *= nmot
-    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc])
+    
+    # print(Pout)
+    # CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
+    # Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
+    # print(Qm*RPM*np.pi / 30)
+    # print((T/nmot)*Uinf)
+    # print((T*Uinf) / (nmot*Pin_c))
+    
+    SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
+    Voc = VocFuncBase(SOC, BattType)
+    
+    return([T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
 
 
 #%%################## PLOTTING FUNCTIONS ##################
@@ -880,22 +904,19 @@ def exactly_one_defined(*args) -> bool:
 
 def PointResultFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True):
     ''' 
-    PointResult for fixed Uinf, SOC, dT
-    
-    Does not accept runtime t yet, only SOC and Voc
-    
+    PointResult for fixed Uinf, dT, t/SOC/Voc, h/rho
+        
     Outputs
     --------------------------------
-    array of: [T, Q, RPM, eta_drive, eta_p, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC_Voc]
-    
-    TODO: allow PointResult to take in a runtime
+    array of:
+        
+    0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
+    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     
     '''
-
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns, self.np, self.CB, self.Rb, self.BattType, 
             self.KV, self.Rm, self.I0, self.nmot)
-    
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
         
@@ -904,29 +925,45 @@ def PointResultFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = No
     
     if h is not None:
         rho = atm().rho(h)
-    
+                
     if t is not None:
-        propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
+        try:
+            propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
+        except:
+            print('ERROR: Infeasible input combination, try reducing runtime')
+            return(np.zeros(20))
+        if propQs[19] < 0.0:
+            print('ERROR: SOC < 0% for that runtime')
+            return(np.zeros(20))
     else:
         if SOC is not None:
             Voc = VocFuncBase(SOC, self.BattType)
-        propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
-    
+        else:
+            SOC = -0.5
+        # find SOC from Voc? (too costly imo...)
+        try:
+            propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, SOC, *args)
+        except:
+            print('ERROR: Infeasible input combination, try reducing runtime')
+            return(np.zeros(20))
+        
     if verbose:
         if t is not None:
-            print(f'\nAt Uinf = {Uinf/ftm:.4f} ft/s, Throttle = {dT*100:.0f}%, Density Altitude = {h:.0f} m, Runtime = {t:.4f} V')
-        elif SOC is not None:
-            print(f'\nAt Uinf = {Uinf/ftm:.4f} ft/s, SOC = {SOC*100:.0f}%, Density Altitude = {h:.0f} m, Throttle = {dT*100:.0f}%')
+            print(f'\nAt Uinf = {Uinf/ftm:.2f} ft/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m3, Runtime = {t:.1f} s')
+        elif SOC is not None and SOC > 0.0:
+            print(f'\nAt Uinf = {Uinf/ftm:.2f} ft/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m3, SOC = {SOC*100:.0f}%')
         elif Voc is not None:
-            print(f'\nAt Uinf = {Uinf/ftm:.4f} ft/s, Voc = {SOC:.2f}%, Density Altitude = {h:.0f} m, Throttle = {dT*100:.0f}%')
+            print(f'\nAt Uinf = {Uinf/ftm:.2f} ft/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m3, Voc = {Voc:.2f} V')
 
         for i, name in enumerate(propQnames):
             if name == 'Total Thrust (lbf)':
-                print(f'{name:30} = {propQs[i]/lbfN:.4f}')
+                print(f'{name:30} = {propQs[i]/lbfN:.3f}')
             elif 'Efficiency' in name:
-                print(f'{name:30} = {propQs[i]*100:.4f}%')
+                print(f'{name:30} = {propQs[i]*100:.2f}%')
+            elif 'State of Charge' in name:
+                print(f'{name:30} = {propQs[i]*100:.2f}%')
             else:
-                print(f'{name:30} = {propQs[i]:.4f}')
+                print(f'{name:30} = {propQs[i]:.3f}')
     return(np.array(propQs))
 
 # #%% OLD WORK
