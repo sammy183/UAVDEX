@@ -90,13 +90,11 @@ class PointDesign:
         except:
             raise ValueError('Battery name not recognized; please call .BatteryOptions()')
 
-        try:
-            self.ns = batt_data['Cell Count'].values[0]
-        except:
-            raise ValueError('Battery name not recognized; please call .BatteryOptions()')
-
+        self.ns = batt_data['Series Cell Count'].values[0]
+        self.ns = batt_data['Parallel Cell Count'].values[0]
         self.CB = batt_data['Capacity (mAh)'].values[0]
         self.Rb = batt_data['Resistance (Ohm)'].values[0]
+        self.BattType = batt_data['Battery Type'].values[0] # string, either LiPo or Liion
         self.battery = True
         # soon add weight, max continuous current, etc
         
