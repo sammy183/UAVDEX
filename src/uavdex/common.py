@@ -30,13 +30,15 @@ With motor, battery, propeller selected:
 import numpy as np
 import pandas as pd
 from uavdex import _uavdex_root
-from uavdex.performance import *
-from uavdex.propulsions import *
-from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+from performance import *
+from propulsions import *
+# from VSPcontribution.atmosphere import stdatm1976 as atm 
 
 lbfN = 4.44822
 ftm = 0.3048
 
+from pathlib import Path
+_uavdex_root = Path(__file__).parent
 path_to_data = _uavdex_root / 'Databases/'
 
 class PointDesign:
@@ -89,9 +91,11 @@ class PointDesign:
             batt_data = df.loc[df['Name'] == self.batt_name]
         except:
             raise ValueError('Battery name not recognized; please call .BatteryOptions()')
-
+        print(path_to_data / 'Batteries.csv')
+        pd.set_option('display.max_columns', None)
+        print(batt_data)
         self.ns = batt_data['Series Cell Count'].values[0]
-        self.ns = batt_data['Parallel Cell Count'].values[0]
+        self.np = batt_data['Parallel Cell Count'].values[0]
         self.CB = batt_data['Capacity (mAh)'].values[0]
         self.Rb = batt_data['Resistance (Ohm)'].values[0]
         self.BattType = batt_data['Battery Type'].values[0] # string, either LiPo or Liion
@@ -138,27 +142,27 @@ class PointDesign:
         
         
     # TODO write this better
-    def Altitude(self, h):
-        '''
-        h (altitude in m)
+    # def Altitude(self, h):
+    #     '''
+    #     h (altitude in m)
         
-        Altitude required for density using stdatm1976 atmosphere 
+    #     Altitude required for density using stdatm1976 atmosphere 
     
-        Altitude will default to Standard Sea Level
+    #     Altitude will default to Standard Sea Level
         
-        TODO implement calling of alternative atmospheres
-        '''
-        self.rho = atm.rho(h) 
+    #     TODO implement calling of alternative atmospheres
+    #     '''
+    #     self.rho = atm.rho(h) 
     
-    def Density(self, rho):
-        '''
-        alternative to h
+    # def Density(self, rho):
+    #     '''
+    #     alternative to h
         
-        input air density (rho) directly in kg/m3
+    #     input air density (rho) directly in kg/m3
                                           
-        density will default to 1.225 kg/m3
-        '''
-        self.rho = atm().rho(h)
+    #     density will default to 1.225 kg/m3
+    #     '''
+    #     self.rho = atm().rho(h)
         
     # def SOC(self, SOC):
     #     '''

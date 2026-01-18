@@ -903,13 +903,13 @@ def PointResultFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = No
         raise ValueError("Exactly one of h or rho must be provided")
     
     if h is not None:
-        rho = self.Altitude(h)
+        rho = atm().rho(h)
     
     if t is not None:
         propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
     else:
         if SOC is not None:
-            Voc = VocFuncBase(SOC)
+            Voc = VocFuncBase(SOC, self.BattType)
         propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
     
     if verbose:
