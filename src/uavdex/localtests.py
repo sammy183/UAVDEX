@@ -8,6 +8,8 @@ Testing locally, later learn how to test properly using the premade file structu
 """
 
 import common as ad
+import matplotlib.pyplot as plt
+import numpy as np
 
 t = ad.PointDesign()
 t.Motor('C-4130/20', 1)
@@ -21,26 +23,31 @@ t.Motor('C-4130/20', 1)
 t.PointResult(Uinf = 48, h = 10, t = 100, dT = 0.95)
 
 
-
-import numpy as np
-
 runtimes = np.linspace(10, 500)
 
+SOCend = 0.15 # 15% end SOC
 etas = np.zeros(runtimes.size)
 Ts = np.zeros(runtimes.size)
 RPMs = np.zeros(runtimes.size)
+breaki = 0
 for i, runtime in enumerate(runtimes):
     propQ = t.PointResult(Uinf = 15, h = 10, t = runtime, dT = 1.0, verbose = True)
-    etas[i] = propQ[8]
-    Ts[i] = propQ[0]
-    RPMs[i] = propQ[2]
-    
-    
-import matplotlib.pyplot as plt
+    if propQ[19] > SOCend:
+        etas[i] = propQ[3]
+        Ts[i] = propQ[0]
+        RPMs[i] = propQ[2]
+        breaki = i
+    else:
+        break
 
+runtimes = runtimes[:breaki]
+etas = etas[:breaki]
+Ts = Ts[:breaki]
+RPMs = RPMs[:breaki]
 plt.plot(runtimes, etas, '.')
 plt.ylabel('Efficiency')
 plt.yticks([0.25, 0.5, 0.75, 1.0])
+# plt.ylim([etas[etas > 0].min(), etas.max()])
 plt.show()
 
 plt.plot(runtimes, Ts)
