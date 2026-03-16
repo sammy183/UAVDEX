@@ -29,18 +29,24 @@ With motor, battery, propeller selected:
 
 import numpy as np
 import pandas as pd
-from uavdex import _uavdex_root
-from uavdex.performance import *
-from uavdex.propulsions import *
-from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+# from uavdex import _uavdex_root
+# from uavdex.performance import *
+# from uavdex.propulsions import *
+# from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+
+
+### LOCAL TEST
+from performance import *
+from propulsions import *
+from VSPcontribution.atmosphere import stdatm1976 as atm
+
+from pathlib import Path
+_uavdex_root = Path(__file__).parent
+path_to_data = _uavdex_root / 'Databases/'
+#TODO: change back asap when finishing local tests
 
 lbfN = 4.44822
 ftm = 0.3048
-
-# from pathlib import Path
-# _uavdex_root = Path(__file__).parent
-path_to_data = _uavdex_root / 'Databases/'
-#TODO: change back asap when finishing local tests
 
 class PointDesign:
     def __init__(self):
@@ -138,53 +144,12 @@ class PointDesign:
         self.propdiam = float(prop_name.split('x')[0])*0.0254 # convert inches to m
         self.prop = True
         
-        
-    # TODO write this better
-    # def Altitude(self, h):
-    #     '''
-    #     h (altitude in m)
-        
-    #     Altitude required for density using stdatm1976 atmosphere 
-    
-    #     Altitude will default to Standard Sea Level
-        
-    #     TODO implement calling of alternative atmospheres
-    #     '''
-    #     self.rho = atm.rho(h) 
-    
-    # def Density(self, rho):
-    #     '''
-    #     alternative to h
-        
-    #     input air density (rho) directly in kg/m3
-                                          
-    #     density will default to 1.225 kg/m3
-    #     '''
-    #     self.rho = atm().rho(h)
-        
-    # def SOC(self, SOC):
-    #     '''
-    #     define PointDesign battery State of Charge (will determine Voc via battery discharge curve)
-    #     '''
-    #     self.SOC = SOC 
-    #     self.Voc = VocFuncBase(SOC)
-        
-    # def Voc(self, Voc):
-    #     '''
-    #     define PointDesign cell voltage directly
-    #     '''
-    #     self.Voc = Voc
-
     ########################################################
     ########################################################
     ############### PROPULSION FUNCTIONS ###################
     ########################################################
     ########################################################
     # need functions for these combinations:
-        # if density is not specified always use rho version with standard density
-        
-        # How do I intuitively structure this???
-        
         # dT, Vinf, rho, t
         # dT, Vinf, rho, SOC
         # dT, Vinf, rho, Voc
@@ -200,6 +165,28 @@ class PointDesign:
         0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
         T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC'''
         return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose))
+    
+    
+    def LinePlotData(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True):
+        '''
+        Input:
+            fix three of 
+                dT, Vinf, rho/h, t/SOC/Voc
+            for the remaining one, input a np.array of values
+        
+        Output:
+            PropQs, input array
+            
+        PropQs: a 2D np array with columns corresponding to
+        0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
+        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+
+        and the rows corresponding to the value of the variable input
+        
+        then also the input 1D np array
+        '''
+        return(LinePlotDataFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose))
+    
     
     # def PointResult(self, Vinf, dT, t, rho = self.rho):
         

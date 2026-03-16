@@ -55,3 +55,42 @@ plt.show()
 
 plt.plot(runtimes, RPMs)
 plt.show()
+
+#%% testing lineplot
+ftm = 0.3048
+
+t.Prop('22x12E')
+t.Motor('C-4130/20', 2) # dual motor
+arrin = np.linspace(0, 80, 500)
+propQs, arr = t.LinePlotData(Uinf = arrin, dT = 1.0, Voc = 3.7, h = 10)
+
+Vs = arr 
+
+for interestindex in [0]:
+    fig, ax = plt.subplots(figsize = (6, 4), dpi = 1000)
+                    
+    propQnames = ['Total Thrust (N)', 'Total Torque (Nm)', 'RPM', 'Drive Efficiency', 'Propeller Efficiency', 'Gearing Efficiency', 'Motor Efficiency', 'ESC Efficiency', 'Battery Efficiency', 'Mech. Power Out of 1 Motor (W)', 
+                       'Elec. Power Into 1 Motor (W)', 'Elec. Power Into 1 ESC (W)', 'Current in 1 Motor (A)', 'Current in 1 ESC (A)', 'Current in Battery (A)',
+                       'Voltage in 1 Motor (V)', 'Voltage in 1 ESC (V)', 'Battery Voltage (V)', 'Voltage Per Cell (V)', 'State of Charge']
+    ax.plot(Vs/ftm, propQs[:, interestindex]) 
+    # ax.plot([cruise_V/ftm, cruise_V/ftm], ax.get_ylim(), '--', color = 'red', label = 'Cruise Velocity')
+    ax.grid()
+    ax.minorticks_on()
+    # plt.legend()
+    plt.ylabel(f'{propQnames[interestindex]}') # need to add a way to get units in correctly
+    plt.xlabel('Velocity (ft/s)')
+
+# TODO: find a better way to say motor(s) depending on nmot
+# if self.nmot > 1:
+#     s = 's'
+# else:
+#     s = ''
+
+# if self.SOCinput:
+#     plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t*100:.0f}% SOC and {dT*100:.0f}% throttle')
+# elif self.Vocinput:
+#     plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.4f} V Voc and {dT*100:.0f}% throttle')
+# else:
+#     plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.1f} s runtime and {dT*100:.0f}% throttle')
+plt.show()
+    
