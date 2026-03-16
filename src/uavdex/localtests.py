@@ -15,12 +15,12 @@ t = ad.PointDesign()
 t.Motor('C-4130/20', 1)
 t.Battery('Gaoneng_8S_3300', 0.85)
 t.Prop('16x12E')
-t.PointResult(Uinf = 28, h = 10, SOC = 1.0, dT = 0.8)
-t.PointResult(Uinf = 28, h = 10, Voc = 3.7, dT = 0.8)
+t.PointResult(Uinf = 28, h = 10, SOC = 1.0, dT = 0.8, verbose = False)
+t.PointResult(Uinf = 28, h = 10, Voc = 3.7, dT = 0.8, verbose = False)
 
-t.PointResult(Uinf = 40, h = 10, t = 100, dT = 0.8)
+t.PointResult(Uinf = 40, h = 10, t = 100, dT = 0.8, verbose = False)
 t.Motor('C-4130/20', 1)
-t.PointResult(Uinf = 48, h = 10, t = 100, dT = 0.95)
+t.PointResult(Uinf = 48, h = 10, t = 100, dT = 0.95, verbose = False)
 
 
 runtimes = np.linspace(10, 500)
@@ -31,7 +31,7 @@ Ts = np.zeros(runtimes.size)
 RPMs = np.zeros(runtimes.size)
 breaki = 0
 for i, runtime in enumerate(runtimes):
-    propQ = t.PointResult(Uinf = 15, h = 10, t = runtime, dT = 1.0, verbose = True)
+    propQ = t.PointResult(Uinf = 15, h = 10, t = runtime, dT = 1.0, verbose = False)
     if propQ[19] > SOCend:
         etas[i] = propQ[3]
         Ts[i] = propQ[0]
@@ -60,25 +60,25 @@ plt.show()
 ftm = 0.3048
 
 t.Prop('22x12E')
-t.Motor('C-4130/20', 2) # dual motor
-arrin = np.linspace(0, 80, 500)
-propQs, arr = t.LinePlotData(Uinf = arrin, dT = 1.0, Voc = 3.7, h = 10)
+t.Motor('C-4130/20', 1) # dual motor
+arrin = np.linspace(0, 1)
+propQs, arr = t.LinePlotData(Uinf = 15, dT = arrin, SOC = 0.8, h = 5)
 
 Vs = arr 
 
-for interestindex in [0]:
+for interestindex in [0, 2, 3, 4, 6]:
     fig, ax = plt.subplots(figsize = (6, 4), dpi = 1000)
                     
     propQnames = ['Total Thrust (N)', 'Total Torque (Nm)', 'RPM', 'Drive Efficiency', 'Propeller Efficiency', 'Gearing Efficiency', 'Motor Efficiency', 'ESC Efficiency', 'Battery Efficiency', 'Mech. Power Out of 1 Motor (W)', 
                        'Elec. Power Into 1 Motor (W)', 'Elec. Power Into 1 ESC (W)', 'Current in 1 Motor (A)', 'Current in 1 ESC (A)', 'Current in Battery (A)',
                        'Voltage in 1 Motor (V)', 'Voltage in 1 ESC (V)', 'Battery Voltage (V)', 'Voltage Per Cell (V)', 'State of Charge']
-    ax.plot(Vs/ftm, propQs[:, interestindex]) 
+    ax.plot(arrin, propQs[:, interestindex])
     # ax.plot([cruise_V/ftm, cruise_V/ftm], ax.get_ylim(), '--', color = 'red', label = 'Cruise Velocity')
     ax.grid()
     ax.minorticks_on()
     # plt.legend()
     plt.ylabel(f'{propQnames[interestindex]}') # need to add a way to get units in correctly
-    plt.xlabel('Velocity (ft/s)')
+    plt.xlabel('Input Quantity')
 
 # TODO: find a better way to say motor(s) depending on nmot
 # if self.nmot > 1:

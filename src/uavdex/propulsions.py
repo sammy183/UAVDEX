@@ -811,6 +811,8 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, SOC, *args):
     Pout =  rho*((RPM/60)**3)*(d**5)*CP     # mechanical power out of ONE motor
     Pin_m = Vm*Im                           # electric power into one motor
     Pin_c = Vc*Ic                           # electric power into one controller
+    if CP == 0.0:
+        return([0.0]*20)
     
     eta_p = (CT*J)/CP
     eta_m = Pout/Pin_m 
@@ -1055,9 +1057,11 @@ def LinePlotDataFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = N
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input = copy.deepcopy(clean_inputs)
             inner_input[idxarr] = value
-            print(inner_input)
             PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], 0.0, *args) # TODO: fix this terrible SOC flag
-            
+            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
+            #     endidx = i 
+            #     break
+        endidx = clean_inputs[idxarr].size
     else:
         clean_inputs = [Uinf, dT, rho, t]
         PropQs = np.zeros((clean_inputs[idxarr].size, 20))
@@ -1065,6 +1069,12 @@ def LinePlotDataFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = N
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input[idxarr] = value
             PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args) # TODO: fix this terrible SOC flag
+            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
+            #     endidx = i 
+            #     break
+        endidx = clean_inputs[idxarr].size
+    inputarr = inputarr[:endidx]
+    PropQs = PropQs[:endidx, :]
     return(PropQs, inputarr)
     
         
