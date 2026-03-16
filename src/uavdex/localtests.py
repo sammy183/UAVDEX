@@ -60,9 +60,9 @@ plt.show()
 ftm = 0.3048
 
 t.Prop('22x12E')
-t.Motor('C-4130/20', 1) # dual motor
-arrin = np.linspace(0, 1)
-propQs, arr = t.LinePlotData(Uinf = 15, dT = arrin, SOC = 0.8, h = 5)
+t.Motor('V8110-170', 1) # dual motor
+arrin = np.linspace(0, 500)
+propQs, arr = t.LinePlotData(Uinf = 15, dT = 1.0, t = arrin, h = 5)
 
 Vs = arr 
 
@@ -79,6 +79,10 @@ for interestindex in [0, 2, 3, 4, 6]:
     # plt.legend()
     plt.ylabel(f'{propQnames[interestindex]}') # need to add a way to get units in correctly
     plt.xlabel('Input Quantity')
+    
+# t.OpenMotorData()
+# t.OpenBatteryData()
+# t.OpenPropellerData()
 
 # TODO: find a better way to say motor(s) depending on nmot
 # if self.nmot > 1:

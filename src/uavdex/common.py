@@ -29,6 +29,8 @@ With motor, battery, propeller selected:
 
 import numpy as np
 import pandas as pd
+import os
+import subprocess
 # from uavdex import _uavdex_root
 # from uavdex.performance import *
 # from uavdex.propulsions import *
@@ -80,7 +82,42 @@ class PointDesign:
     def ViewSetup(self):
         print(f'Battery Specs: {self.batt_name}, {self.ns}S, {self.CB} mAh, {self.Rb} Ohm\n'
               f'Motor Specs:   {self.nmot:.0f} {self.motor_name}, {self.KV} KV, I0 = {self.I0} A, {self.Rm} Ohm, Max Power = {self.Pmax} W\n')
-        
+    
+    def OpenMotorData(self):
+        '''
+        Opens the Motor CSV for editing/review
+        '''
+        filename = path_to_data / 'Motors.csv'
+        try: # windows main
+            os.startfile(filename)
+        except AttributeError:
+            try: # windows backup
+                subprocess.Popen(['start', filename], shell=True)
+            except:
+                os.system(f'open {filename}') # for mac
+    
+    def OpenBatteryData(self):
+        '''
+        Opens the Batteries CSV for editing/review
+        '''
+        filename = path_to_data / 'Batteries.csv'
+        try: # windows main
+            os.startfile(filename)
+        except AttributeError:
+            try: # windows backup
+                subprocess.Popen(['start', filename], shell=True)
+            except:
+                os.system(f'open {filename}') # for mac
+    
+    def OpenPropellerData(self):
+        '''
+        Opens the Propeller data folder for editing/review
+        '''
+        folder_path = path_to_data /'APCPropDatabase'
+        try:
+            os.startfile(folder_path)
+        except:
+            os.system(f'open {folder_path}') # for mac
     ########################################################
     ########################################################
     ############### COMPONENT INITIALIZATION ###############
@@ -167,7 +204,7 @@ class PointDesign:
         return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose))
     
     
-    def LinePlotData(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True):
+    def LinePlotData(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True, plot = True):
         '''
         Input:
             fix three of 
@@ -185,9 +222,8 @@ class PointDesign:
         
         then also the input 1D np array
         '''
-        return(LinePlotDataFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose))
-    
-    
+        return(LinePlotFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose, plot = plot))
+        
     # def PointResult(self, Vinf, dT, t, rho = self.rho):
         
     

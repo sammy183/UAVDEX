@@ -998,7 +998,7 @@ def PointResultFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = No
 # @njit(fastmath = True)
 # def process_LinePLot_Voc(clean_inputs, *args):
 
-def LinePlotDataFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True):
+def LinePlotFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True, plot = False):
     '''
     Input:
         constant values for three of: Uinf, dT, rho/h, SOC/Voc/t
@@ -1068,13 +1068,21 @@ def LinePlotDataFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = N
         inner_input = copy.deepcopy(clean_inputs)
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args) # TODO: fix this terrible SOC flag
+            PropQs[i, :] = SimplifiedRPMBase_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args) # TODO: fix this terrible SOC flag
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
             #     endidx = i 
             #     break
+            if PropQs[i, -1] <= 0.1: # minimum SOC = 10% for batteries
+                endidx = i
+                break
         endidx = clean_inputs[idxarr].size
     inputarr = inputarr[:endidx]
     PropQs = PropQs[:endidx, :]
+    
+    if plot:
+        # create plot here!
+        thing = 1
+    
     return(PropQs, inputarr)
     
         
