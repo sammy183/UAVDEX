@@ -79,7 +79,8 @@ for interestindex in [0, 2, 3, 4, 6]:
     # plt.legend()
     plt.ylabel(f'{propQnames[interestindex]}') # need to add a way to get units in correctly
     plt.xlabel('Input Quantity')
-    
+
+
 # t.OpenMotorData()
 # t.OpenBatteryData()
 # t.OpenPropellerData()
