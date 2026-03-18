@@ -25,7 +25,7 @@ t.PointResult(Uinf = 48, h = 10, t = 100, dT = 0.95)
 
 runtimes = np.linspace(10, 500)
 
-SOCend = 0.15 # 15% end SOC
+SOCend = 0.2 # 15% end SOC
 etas = np.zeros(runtimes.size)
 Ts = np.zeros(runtimes.size)
 RPMs = np.zeros(runtimes.size)
@@ -50,8 +50,8 @@ plt.yticks([0.25, 0.5, 0.75, 1.0])
 # plt.ylim([etas[etas > 0].min(), etas.max()])
 plt.show()
 
-plt.plot(runtimes, Ts)
-plt.show()
+# plt.plot(runtimes, Ts)
+# plt.show()
 
-plt.plot(runtimes, RPMs)
-plt.show()
+# plt.plot(runtimes, RPMs)
+# plt.show()
