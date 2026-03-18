@@ -72,7 +72,6 @@ this data does not extend into the high performance ranges (say RPMs of 6k-12k f
 As of 8/29/2025, this experimental data is not implemented yet, but in the future it will be used in conjunction with the APC data for a mixed fidelity approach.
 
 
-
 Model Formulation (primary based on Saemi 2023, secondary if available data based on Gong 2018):
     Simplified RPM (with constant ESC efficiency and constant I0)
     SAEMI 2023: https://www.mdpi.com/2226-4310/11/1/16
@@ -152,7 +151,10 @@ import numba
 from numba import njit, jit
 from numba.typed import List
 from numba.types import unicode_type
-from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+import copy
+from VSPcontribution.atmosphere import stdatm1976 as atm
+# from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+
 
 lbfN = 4.44822
 ftm = 0.3048
@@ -162,8 +164,11 @@ global propQnames
 propQnames = ['Total Thrust (lbf)', 'Total Torque (Nm)', 'RPM', 'Drive Efficiency', 'Propeller Efficiency', 'Gearing Efficiency', 'Motor Efficiency', 'ESC Efficiency', 'Battery Efficiency', 'Mech. Power Out of 1 Motor (W)', 
                    'Elec. Power Into 1 Motor (W)', 'Elec. Power Into 1 ESC (W)', 'Current in 1 Motor (A)', 'Current in 1 ESC (A)', 'Current in Battery (A)',
                    'Voltage in 1 Motor (V)', 'Voltage in 1 ESC (V)', 'Battery Voltage (V)', 'Voltage Per Cell (V)', 'State of Charge']
+# from uavdex import _uavdex_root
 
-from uavdex import _uavdex_root
+### LOCAL TEST
+from pathlib import Path
+_uavdex_root = Path(__file__).parent
 path_to_data = _uavdex_root / 'Databases/'
 
 #%%################### Numerical Methods ###################
@@ -723,7 +728,6 @@ def VocFuncBase(SOC, BattType):
     Jeong 2020 also presents resistance as a function of cell energy:
     Rbatt.cell = 21.0*(ebatt.cell)**-0.8056
     
-    
     Liion
     https://www.researchgate.net/publication/346515863_Comparison_of_Lithium-Ion_Battery_Pack_Models_Based_on_Test_Data_from_Idaho_and_Argonne_National_Laboratories
     Using the i3 battery pack as an intermediate value
@@ -807,6 +811,8 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, SOC, *args):
     Pout =  rho*((RPM/60)**3)*(d**5)*CP     # mechanical power out of ONE motor
     Pin_m = Vm*Im                           # electric power into one motor
     Pin_c = Vc*Ic                           # electric power into one controller
+    if CP == 0.0:
+        return([0.0]*20)
     
     eta_p = (CT*J)/CP
     eta_m = Pout/Pin_m 
@@ -965,6 +971,227 @@ def PointResultFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = No
             else:
                 print(f'{name:30} = {propQs[i]:.3f}')
     return(np.array(propQs))
+
+#%%################################ LinePlot #################################
+# @njit(fastmath = True)
+# def process_LinePlot_Vinf_SOC(Vs, SOC_Voc, dT, propQindx, *args):
+#     ''' To allow for numbification without needing to recompile every iteration '''
+#     outputs = []
+#     thrusts = []
+#     for Vinf in Vs:
+#         propQ = SimplifiedRPM(Vinf, dT, SOC_Voc, *args)
+#         outputs.append(propQ[propQindx])
+#         thrusts.append(propQ[0])
+#     return(outputs, thrusts)
+
+# @njit(fastmath = True)
+# def process_LinePlot_Vinf_t(Vs, t, dT, propQindx, *args):
+#     ''' Identical to above function but uses the constant current t approximation '''
+#     outputs = []
+#     thrusts = []
+#     for Vinf in Vs:
+#         propQ = SimplifiedRPM_t(Vinf, dT, t, *args)
+#         outputs.append(propQ[propQindx])
+#         thrusts.append(propQ[0])
+#     return(outputs, thrusts)
+
+# @njit(fastmath = True)
+# def process_LinePLot_Voc(clean_inputs, *args):
+
+def LinePlotFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True, plot = False):
+    '''
+    Input:
+        constant values for three of: Uinf, dT, rho/h, SOC/Voc/t
+        a range of the final value 
+        
+    IMPORTANT: bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
+
+    Output:
+        2D np array with columns corresponding to 
+        
+        0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
+        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+        
+        and rows corresponding to a range of the nonconstant value
+    '''
+    args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
+            self.ns, self.np, self.CB, self.Rb, self.BattType, 
+            self.KV, self.Rm, self.I0, self.nmot)
+    
+    if not exactly_one_defined(t, SOC, Voc):
+        raise ValueError("Exactly one of t, SOC, or Voc must be provided")
+        
+    if not exactly_one_defined(rho, h):
+        raise ValueError("Exactly one of h or rho must be provided")
+    
+    # Find the np array and the constants to use
+    full_inputs = [Uinf, dT, rho, h, SOC, Voc, t]
+    
+    arrs = 0
+    idxarr = 0
+    for i, specinput in enumerate(full_inputs):
+        if isinstance(specinput, np.ndarray):
+            arrs += 1
+            idxarr = i
+            inputarr = specinput
+    if arrs != 1:
+        raise KeyError("Exactly one array of inputs must be provided")
+    
+    # convert h to density
+    if h is not None:
+        rho = atm().rho(h)
+        
+    # convert SOC to Voc
+    if SOC is not None:
+        Voc = VocFuncBase(SOC, self.BattType)
+    
+    # collapsing indexes
+    if idxarr == 3:
+        idxarr = 2 
+    elif idxarr == 4 or idxarr == 5 or idxarr == 6:
+        idxarr = 3 
+
+    if t is None:
+        clean_inputs = [Uinf, dT, rho, Voc] # if Voc is arr, SOC is arr and vice versa
+        PropQs = np.zeros((clean_inputs[idxarr].size, 20))
+        for i, value in enumerate(clean_inputs[idxarr]):
+            inner_input = copy.deepcopy(clean_inputs)
+            inner_input[idxarr] = value
+            PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], 0.0, *args) # TODO: fix this terrible SOC flag
+            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
+            #     endidx = i 
+            #     break
+        endidx = clean_inputs[idxarr].size
+    else:
+        clean_inputs = [Uinf, dT, rho, t]
+        PropQs = np.zeros((clean_inputs[idxarr].size, 20))
+        inner_input = copy.deepcopy(clean_inputs)
+        for i, value in enumerate(clean_inputs[idxarr]):
+            inner_input[idxarr] = value
+            PropQs[i, :] = SimplifiedRPMBase_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args) # TODO: fix this terrible SOC flag
+            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
+            #     endidx = i 
+            #     break
+            if PropQs[i, -1] <= 0.1: # minimum SOC = 10% for batteries
+                endidx = i
+                break
+        endidx = clean_inputs[idxarr].size
+    inputarr = inputarr[:endidx]
+    PropQs = PropQs[:endidx, :]
+    
+    if plot:
+        # create plot here!
+        thing = 1
+    
+    return(PropQs, inputarr)
+    
+        
+    # cases:
+    # Uinf arr, dT, rho, Voc
+    # Uinf arr, dT, rho, t
+    # Uinf, dT arr, rho, Voc
+    # Uinf, dT arr, rho, t
+    # Uinf, dT, rho arr, Voc
+    # Uinf, dT, rho arr, t
+    # Uinf, dT, rho, Voc arr
+    # Uinf, dT, rho, t arr
+    
+    # decision tree: t or Voc? --> Uinf arr ? --> dT arr ? --> rho arr? 
+    
+            
+            
+    # def LinePlot_Vinf(self, SOC_Voc_t, dT, plot = True, n = 200, sigfigs = 4):
+    #     '''
+    #     Line plot of propQ vs Vinf at fixed SOC/Voc/t, dT
+        
+    #     Needs to accomidate SOC, Voc, t inputs
+        
+    #     (propQ = propulsion quantity, see SimplifiedRPM documentation for options) 
+    #     '''
+        
+    #     # checking that requested propQ exists
+    #     propQs = ['thrust', 'torque', 'RPM', 'eta_drive', 'eta_p', 'eta_m', 'eta_c',  
+    #               'Pout', 'Pin_m', 'Pin_c', 'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 'Voc', 'SOC']
+        
+    #     try:
+    #         interestindex = propQs.index(self.propQ)
+    #         if self.SOCinput:
+    #             print(f'\nPlotting {self.propQ} for SOC = {SOC_Voc_t*100:.0f}%, throttle = {dT*100:.0f}%')
+    #         elif self.Vocinput:
+    #             print(f'\nPlotting {self.propQ} for Voc = {SOC_Voc_t:.4f} V, throttle = {dT*100:.0f}%')
+    #         elif self.tinput:
+    #             print(f'\nPlotting {self.propQ} for t = {SOC_Voc_t:.1f} s, throttle = {dT*100:.0f}%')
+    #     except:
+    #         print('Quantity not available, please choose one of:\nthrust, torque, RPM, eta_p, eta_m, eta_c, eta_drive, Pout, Pin_m, Pin_c, Im, Ic, Ib, Voc, Vbat, Vm, Vc, SOC')
+    #         return()
+        
+    #     rpm_list = np.array(self.RPM_VALUES)
+
+    #     #################################################################
+    #     #### NEED A FUNCTION THAT GETS THE MAXIMUM VELOCITY FIRST #######
+    #     Vs = np.linspace(0, 50, n)        # FOR NOW APPROXIMATE AS 50 M/S
+    #     #################################################################
+        
+    #     args = (rpm_list, self.COEF_NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
+    #             self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
+        
+    #     if self.tinput:
+    #         outs, Ts = process_LinePlot_Vinf_t(Vs, SOC_Voc_t, dT, interestindex, *args)
+    #         # if outs.count(0.0) > 3:
+    #         #     raise ValueError('Warning: input runtime too long')
+    #         # TODO: find a way to properly illustrate to ignorant users that where the plot goes to 0 is when SOC is less than max discharge
+    #     else:
+    #         outs, Ts = process_LinePlot_Vinf_SOC(Vs, SOC_Voc_t, dT, interestindex, *args)        
+
+    #     propQs = np.array(outs)
+    #     T = np.array(Ts)
+        
+    #     if self.propQ == 'thrust': # convert to lbf if thrust is used 
+    #         propQs /= lbfN
+
+    #     # finding cruise velocity at the given SOC, dT
+    #     D = 0.5*self.rho*self.CD*self.Sw*(Vs**2) # metric here
+    #     cruise_idx = np.argmin(np.abs(T-D))
+    #     cruise_D = D[cruise_idx]
+    #     cruise_V = np.sqrt(cruise_D/(0.5*self.rho*self.CD*self.Sw)) # in m/s
+        
+    #     # TODO: add max/min and cruise values to the plot
+    #     print(f'Max {self.propQ} = {propQs.max():.{sigfigs}f} at Vinf = {Vs[np.argmax(propQs)]/ftm:.{sigfigs}f} ft/s')
+    #     print(f'Min {self.propQ} = {propQs.min():.{sigfigs}f} at Vinf = {Vs[np.argmin(propQs)]/ftm:.{sigfigs}f} ft/s')
+    #     print(f'at cruise Vinf = {cruise_V/ftm:.{sigfigs}f} ft/s, {self.propQ} = {propQs[cruise_idx]:.{sigfigs}f}')
+        
+    #     if plot:
+    #         fig, ax = plt.subplots(figsize = (6, 4), dpi = 1000)
+                    
+    #         ax.plot(Vs/ftm, propQs) 
+    #         ax.plot([cruise_V/ftm, cruise_V/ftm], ax.get_ylim(), '--', color = 'red', label = 'Cruise Velocity')
+    #         ax.grid()
+    #         ax.minorticks_on()
+    #         plt.legend()
+    #         plt.ylabel(f'{propQnames[interestindex]}') # need to add a way to get units in correctly
+    #         plt.xlabel('Velocity (ft/s)')
+            
+    #         # TODO: find a better way to say motor(s) depending on nmot
+    #         if self.nmot > 1:
+    #             s = 's'
+    #         else:
+    #             s = ''
+                
+    #         if self.SOCinput:
+    #             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t*100:.0f}% SOC and {dT*100:.0f}% throttle')
+    #         elif self.Vocinput:
+    #             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.4f} V Voc and {dT*100:.0f}% throttle')
+    #         else:
+    #             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.1f} s runtime and {dT*100:.0f}% throttle')
+    #         plt.show()
+        
+    #     return(outs, cruise_V)
+    
+    
+    # fundamentally will use either SimplifiedRPM_Voc or SimplifiedRPM_t depending on what's defined
+    
+    
+
 
 # #%% OLD WORK
 

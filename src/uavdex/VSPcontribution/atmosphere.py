@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.interpolate import interp1d
-import uavdex.VSPcontribution.units as u
+# import uavdex.VSPcontribution.units as u
+import VSPcontribution.units as u
 from collections import namedtuple
 
 '''

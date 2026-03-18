@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from numba import jit, njit
 
-import uavdex.propulsions as propulsions
+# import uavdex.propulsions as propulsions
 
 lbfN = 4.44822
 ftm = 0.3048
