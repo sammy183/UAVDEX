@@ -4,7 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "uavdex"
-description = "Unmanned Aerial Vehicle Design EXploration. A Python package for multidisciplinary analysis and optimization of electric group 1-2 UAVs."
+# IMPORTANT: No newlines (\n) allowed in this string!
+description = "Unmanned Aerial Vehicle Design EXploration - A Python package for multidisciplinary analysis and optimization of electric group 1-2 UAVs."
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
@@ -17,7 +18,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-# Combined dependencies from your setup.py and pyproject.toml
 dependencies = [
     "matplotlib",
     "numpy",
