@@ -37,7 +37,7 @@ from uavdex.propulsions import *
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
 
 
-### LOCAL TESTING
+### OLD LOCAL TESTING
 # from performance import *
 # from propulsions import *
 # from VSPcontribution.atmosphere import stdatm1976 as atm
@@ -46,7 +46,6 @@ from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm
 # _uavdex_root = Path(__file__).parent
 
 path_to_data = _uavdex_root / 'Databases/'
-#TODO: change back asap when finishing local tests
 
 lbfN = 4.44822
 ftm = 0.3048

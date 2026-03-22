@@ -160,7 +160,7 @@ ftm = 0.3048
 MPH_TO_MPS = 0.44704  # Conversion factor: 1 mph to m/s
 
 global propQnames
-propQnames = ['Total Thrust (lbf)', 
+propQnames = ['Total Thrust (N)', 
               'Total Torque (Nm)', 
               'RPM', 
               'Drive Efficiency', 
@@ -187,7 +187,7 @@ propQnames = ['Total Thrust (lbf)',
 from uavdex import _uavdex_root
 path_to_data = _uavdex_root / 'Databases/'
 
-### LOCAL TESTING
+### OLD LOCAL TESTING
 # from VSPcontribution.atmosphere import stdatm1976 as atm
 # from pathlib import Path
 # _uavdex_root = Path(__file__).parent
