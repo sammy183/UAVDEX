@@ -12,7 +12,7 @@ by Sammy Nassau, RPI 2025
 #### DesignStudy
 #### ClassicalSizing
 
-
+Note to self: when uploading, change version number in init and pyproject.toml
 
 # Propulsion Models  
 
