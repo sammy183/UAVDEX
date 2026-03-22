@@ -12,7 +12,7 @@ by Sammy Nassau, RPI 2025
 #### DesignStudy
 #### ClassicalSizing
 
-Note to self: when uploading, change version number in init and pyproject.toml
+Note to self: when uploading, change version number in UAVDEX/src/uavdex/_ _ init _ _.py
 
 # Propulsion Models  
 
