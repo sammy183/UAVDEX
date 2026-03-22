@@ -1,20 +1,23 @@
 [build-system]
-requires = ["setuptools>=46.4.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "uavdex"
-version = "0.1.4"
+description = "Unmanned Aerial Vehicle Design EXploration. A Python package for multidisciplinary analysis and optimization of electric group 1-2 UAVs."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
 authors = [
   { name="Samuel Noble Nassau", email="sammynassau@gmail.com" },
 ]
-description = "Unmanned Aerial Vehicle Design EXploration.\nA Python package for multidisciplinary analysis and optimization of electric group 1-2 UAVs."
-readme = "README.md"
-requires-python = ">=3.9"
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
     "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+# Combined dependencies from your setup.py and pyproject.toml
 dependencies = [
     "matplotlib",
     "numpy",
@@ -24,8 +27,13 @@ dependencies = [
     "tqdm",
     "numba"
 ]
-license = "MIT"
-license-files = ["LICEN[CS]E*"]
+dynamic = ["version"]
+
+[project.urls]
+"Source Code" = "https://github.com/sammy183/UAVDEX"
+
+[tool.setuptools.dynamic]
+version = {attr = "uavdex.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
