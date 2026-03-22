@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+OLD FILE; IGNORE
+
 Created on Sun Jan 18 16:27:11 2026
 
 Testing locally, later learn how to test properly using the premade file structure
@@ -62,12 +64,12 @@ ftm = 0.3048
 t.Prop('22x12E')
 t.Motor('V8110-170', 1) # dual motor
 arrin = np.linspace(0, 500)
-propQs, arr = t.LinePlotData(Uinf = 15, dT = 1.0, t = arrin, h = 5)
+propQs, arr = t.LinePlot(Uinf = 15, dT = 1.0, t = arrin, h = 5)
 
 Vs = arr 
 
 for interestindex in [0, 2, 3, 4, 6]:
-    fig, ax = plt.subplots(figsize = (6, 4), dpi = 1000)
+    fig, ax = plt.subplots(figsize = (6, 4), dpi = 400)
                     
     propQnames = ['Total Thrust (N)', 'Total Torque (Nm)', 'RPM', 'Drive Efficiency', 'Propeller Efficiency', 'Gearing Efficiency', 'Motor Efficiency', 'ESC Efficiency', 'Battery Efficiency', 'Mech. Power Out of 1 Motor (W)', 
                        'Elec. Power Into 1 Motor (W)', 'Elec. Power Into 1 ESC (W)', 'Current in 1 Motor (A)', 'Current in 1 ESC (A)', 'Current in Battery (A)',

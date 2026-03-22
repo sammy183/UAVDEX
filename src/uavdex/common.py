@@ -31,19 +31,20 @@ import numpy as np
 import pandas as pd
 import os
 import subprocess
-# from uavdex import _uavdex_root
-# from uavdex.performance import *
-# from uavdex.propulsions import *
-# from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+from uavdex import _uavdex_root
+from uavdex.performance import *
+from uavdex.propulsions import *
+from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
 
 
-### LOCAL TEST
-from performance import *
-from propulsions import *
-from VSPcontribution.atmosphere import stdatm1976 as atm
+### LOCAL TESTING
+# from performance import *
+# from propulsions import *
+# from VSPcontribution.atmosphere import stdatm1976 as atm
 
-from pathlib import Path
-_uavdex_root = Path(__file__).parent
+# from pathlib import Path
+# _uavdex_root = Path(__file__).parent
+
 path_to_data = _uavdex_root / 'Databases/'
 #TODO: change back asap when finishing local tests
 
@@ -118,6 +119,7 @@ class PointDesign:
             os.startfile(folder_path)
         except:
             os.system(f'open {folder_path}') # for mac
+            
     ########################################################
     ########################################################
     ############### COMPONENT INITIALIZATION ###############
@@ -195,7 +197,10 @@ class PointDesign:
         # dT, Vinf, h, SOC
         # dT, Vinf, h, Voc
 
-    def PointResult(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True):
+    def PointResult(self, Uinf = None, dT = None, 
+                    rho = None, h = None, 
+                    SOC = None, Voc = None, t = None, 
+                    verbose = True):
         '''
         Output an array of:        
             
@@ -204,7 +209,10 @@ class PointDesign:
         return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose))
     
     
-    def LinePlotData(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True, plot = True):
+    def LinePlot(self, Uinf = None, dT = None, 
+                 rho = None, h = None, 
+                 SOC = None, Voc = None, t = None, 
+                 verbose = True, plot = True):
         '''
         Input:
             fix three of 
