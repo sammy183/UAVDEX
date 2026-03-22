@@ -201,35 +201,91 @@ class PointDesign:
                     SOC = None, Voc = None, t = None, 
                     verbose = True):
         '''
-        Output an array of:        
+        Input
+        ----------------------------------------------------------------------------------------------------------
+            Uinf        (freestream velocity, m/s)
+            dT          (throttle, 0-1)
+            rho         (density, kg/m3) 
+                or h    (altitude, m)
+            SOC         (state of charge, 0-1) 
+                or Voc  (cell voltage, 2-4.2) 
+                or t    (runtime, s)
             
-        0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
-        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC'''
-        return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose))
+        Output
+        ----------------------------------------------------------------------------------------------------------
+        np.array of propulsion quantities (propQs) with corresponding indexes
+            0  1   2       3        4      5      6      7       8    
+            T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+            
+             9      10     11    12    13    14   15  16  17  18  19  20   21   22
+            Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+        '''
+        def check(val, cond, name):
+            if val is None:
+                return
+            if not cond(val):
+                raise ValueError(f"{name} out of bounds: {val}")
+        check(dT,  lambda x: (x > 0) & (x <= 1), "dT")
+        check(rho, lambda x: x >= 0, "rho")
+        check(h,   lambda x: x >= 0, "h")
+        check(SOC, lambda x: (x >= 0) & (x <= 1), "SOC")
+        check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
+        check(t,   lambda x: x >= 0, "t") 
+            
+        return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, 
+                               SOC = SOC, Voc = Voc, t = t, 
+                               verbose = verbose))
     
-    
-    def LinePlot(self, Uinf = None, dT = None, 
+    def LinePlot(self, propQ = 'T', 
+                 Uinf = None, dT = None, 
                  rho = None, h = None, 
                  SOC = None, Voc = None, t = None, 
-                 verbose = True, plot = True):
+                 verbose = False, plot = True):
         '''
-        Input:
+        Input
+        ----------------------------------------------------------------------------------------------------------
             fix three of 
                 dT, Vinf, rho/h, t/SOC/Voc
             for the remaining one, input a np.array of values
+            
+            OPTIONAL FOR PLOTTING: 
+                propulsion quantity (propQ) of interest to plot:
+                    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+                    Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         
-        Output:
+        Output
+        ----------------------------------------------------------------------------------------------------------
             PropQs, input array
             
         PropQs: a 2D np array with columns corresponding to
-        0  1   2       3        4      5      6      7       8    9      10     11   12  13  14  15  16  17  18    19
-        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+            0  1   2       3        4      5      6      7       8    
+            T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+            
+             9      10     11    12    13    14   15  16  17  18  19  20   21   22
+            Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
 
         and the rows corresponding to the value of the variable input
         
         then also the input 1D np array
         '''
-        return(LinePlotFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, verbose = verbose, plot = plot))
+        # todo add bounds on ranges
+        # bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
+        def check(val, cond, name):
+            if val is None:
+                return
+            arr = np.asarray(val)
+            if not np.all(cond(arr)):
+                raise ValueError(f"{name} out of bounds: {val}")
+        check(dT,  lambda x: (x > 0) & (x <= 1), "dT")
+        check(rho, lambda x: x >= 0, "rho")
+        check(h,   lambda x: x >= 0, "h")
+        check(SOC, lambda x: (x >= 0) & (x <= 1), "SOC")
+        check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
+        check(t,   lambda x: x >= 0, "t") 
+                
+        return(LinePlotFunc(self, propQ = propQ, Uinf = Uinf, dT = dT, 
+                            rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
+                            verbose = verbose, plot = plot))
         
     # def PointResult(self, Vinf, dT, t, rho = self.rho):
         

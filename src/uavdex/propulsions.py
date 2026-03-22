@@ -159,7 +159,7 @@ lbfN = 4.44822
 ftm = 0.3048
 MPH_TO_MPS = 0.44704  # Conversion factor: 1 mph to m/s
 
-global propQnames
+global propQnames, propQshort
 propQnames = ['Total Thrust (N)', 
               'Total Torque (Nm)', 
               'RPM', 
@@ -183,6 +183,11 @@ propQnames = ['Total Thrust (N)',
               'Battery Voltage (V)', 
               'Voltage Per Cell (V)', 
               'State of Charge']
+propQshort = ['T', 'Q', 'RPM', 
+              'eta_drive', 'eta_p', 'eta_g', 'eta_m', 'eta_c', 'eta_b', 
+              'Pout', 'Pin_m', 'Pin_c', 'Pw_m', 'Pw_c', 'Pw_b', 
+              'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 
+              'Voc', 'SOC']
 
 from uavdex import _uavdex_root
 path_to_data = _uavdex_root / 'Databases/'
@@ -482,7 +487,7 @@ def CTNumba(RPM, J, rpm_list, numba_prop_data):
         weight = (RPM - closest_rpms[0]) / (closest_rpms[1] - closest_rpms[0])
         return (1 - weight) * CTs[0] + weight * CTs[1]
     
-
+#%% Non-numba interpolation functions
 def CPBase(RPM, J, rpm_list, numba_prop_data):
     '''
     J: advance ratio
@@ -1083,16 +1088,24 @@ def PointResultFunc(self, Uinf = None, dT = None,
 # @njit(fastmath = True)
 # def process_LinePLot_Voc(clean_inputs, *args):
 
-def LinePlotFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None, Voc = None, t = None, verbose = True, plot = False):
+def LinePlotFunc(self, propQ = 'T',
+                 Uinf = None, dT = None, 
+                 rho = None, h = None, 
+                 SOC = None, Voc = None, t = None, 
+                 verbose = True, plot = False):
     '''
-    Input:
+    Input
+    ----------------------------------------------------------------------------------------------------------
+        a propulsion quantity (propQ) of interest (options given by the output array)
+        
         constant values for three of: Uinf, dT, rho/h, SOC/Voc/t
         a range of the final value 
         
     IMPORTANT: 
         bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
 
-    Output:
+    Output
+    ----------------------------------------------------------------------------------------------------------
         2D np array with columns corresponding to 
         
         0  1   2       3        4      5      6      7       8    
@@ -1103,8 +1116,9 @@ def LinePlotFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None,
         
         and rows corresponding to a range of the nonconstant value
         
-    TODO: numbafy it if it seems like it'll run significantly faster
+    TODO: numbafy
     '''
+    
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns, self.np, self.CB, self.Rb, self.BattType, 
             self.KV, self.Rm, self.I0, self.nmot)
@@ -1117,6 +1131,9 @@ def LinePlotFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None,
     
     # Find the np array and the constants to use
     full_inputs = [Uinf, dT, rho, h, SOC, Voc, t]
+    full_input_names = ['Velocity (m/s)', 'Throttle (0-1)', 
+                        'Density (kg/m\u00B3)', 'Altitude (m)', 
+                        'State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)']
     
     arrs = 0
     idxarr = 0
@@ -1127,6 +1144,8 @@ def LinePlotFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None,
             inputarr = specinput
     if arrs != 1:
         raise KeyError("Exactly one array of inputs must be provided")
+    
+    input_name = full_input_names[idxarr]
     
     # convert h to density
     if h is not None:
@@ -1171,7 +1190,37 @@ def LinePlotFunc(self, Uinf = None, dT = None, rho = None, h = None, SOC = None,
     PropQs = PropQs[:endidx, :]
     
     if plot:
-        thing = 1
+        # todo finish the plotting
+        # primary goal: plot the inputarray on the x-axis versus a selected propQ on the yaxis
+        # secondary goal: if some aircraft characteristics (Cd, Sw) have been provided, plot the T = D over the selected propQ
+        # anything else? Do I want to have an option of plotting a contour where propQ is yaxis, and another var (such as dT corresponds to different contour lines?)
+        # I say no for now
+
+        # IMPORTANT: figure out what to do with the values that don't converge
+        # do I plot them directly and let people alter their inputs?
+        # would prefer to get the code to determine the bounds automatically and raise errors
+        #   if the range is extremely limited
+        
+        propqidx = propQshort.index(propQ)
+
+        fig, ax = plt.subplots(figsize = (6, 4))
+        ax.plot(inputarr, PropQs[:, propqidx], color = 'k')
+        plt.xlabel(input_name)
+        plt.ylabel(propQnames[propqidx])
+        
+        # get short names of inputs along with title string
+        input_names = ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
+        parts = []
+        for name, val in zip(input_names, full_inputs):
+            if val is None:
+                continue
+            if isinstance(val, np.ndarray):
+                continue  # skip arrays
+            parts.append(f"{name} = {val}")
+        title_str = ", ".join(parts)
+        plt.title(f'{input_name} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+        plt.show()
+
     
     return(PropQs, inputarr)
 

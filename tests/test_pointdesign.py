@@ -71,18 +71,42 @@ class TestPointResult(unittest.TestCase):
                 for j, value in enumerate(data):
                     self.assertEqual(precomputed_results[i][j], round(value, 6), f"PointResult case {i}, value {j} does not match precomputed")
                     total_tested += 1
-        print(f"Tested {total_tested} values")
+        print(f"Tested {total_tested} PointResult values")
         
 class TestLinePlot(unittest.TestCase):
     def setUp(self):
         self.design = PointDesign()
-        self.design.Motor('C-4130/20', 1)
-        self.design.Battery('Gaoneng_8S_3300', 0.85)
-        self.design.Prop('16x12E')
+        self.design.Motor('C-4130/20', nmot = 2)
+        self.design.Battery('Gaoneng_8S_3300')
+        self.design.Prop('16x10E')
+        # self.design.Motor('V8110-170', nmot = 1)
+        # self.design.Battery('Gaoneng_8S_3300')
+        # self.design.Prop('22x12E')
     
     def test_lineplot_varients(self):
-        # TODO
-        thing = 1
+        # TODO: figure out how to get the range automatically so ppl don't have to input
+        # self.design.LinePlot(propQ = 'Pw_c', 
+        #              Uinf = np.linspace(0, 40, 100), 
+        #              dT = 0.5, 
+        #              h = 10, 
+        #              SOC = 1.0, 
+        #              plot = True)
+        
+        cases = [
+            {"propQ":'eta_drive', "Uinf":np.linspace(0, 40, 100), "dT":0.5, "h": 10, "SOC": 1.0, "plot":False},
+            {"propQ":'T', "Uinf":np.linspace(0, 40, 100), "dT":0.5, "h": 10, "SOC": 1.0, "plot":False},
+            {"propQ":'eta_drive', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
+            # {"propQ":'eta_p', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
+            # {"propQ":'eta_m', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
+            # {"propQ":'eta_c', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
+        ]
+        
+        for i, case in enumerate(cases):
+            with self.subTest(case=case):
+                self.design.LinePlot(
+                    verbose=False,
+                    **case
+                )
 
 
 if __name__ == '__main__':
