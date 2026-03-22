@@ -2,17 +2,21 @@ name: Release
 
 on:
   release:
-    types: [created]
+    types: [published] # 'published' is safer than 'created' for final releases
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4  # Updated to v4
+        uses: actions/checkout@v4
+        with:
+          # CRITICAL: This forces GitHub to download all history and tags.
+          # Without this, setuptools-scm cannot determine the version.
+          fetch-depth: 0 
 
       - name: Set up Python
-        uses: actions/setup-python@v5  # Updated to v5
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
@@ -22,7 +26,7 @@ jobs:
           pip install build twine
 
       - name: Build Package
-        # This command automatically uses pyproject.toml
+        # setuptools-scm automatically reads the git tag and builds the correct version
         run: python -m build
 
       - name: Publish to PyPI
