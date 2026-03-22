@@ -95,7 +95,7 @@ class TestLinePlot(unittest.TestCase):
         cases = [
             {"propQ":'eta_drive', "Uinf":np.linspace(0, 40, 100), "dT":0.5, "h": 10, "SOC": 1.0, "plot":False},
             {"propQ":'T', "Uinf":np.linspace(0, 40, 100), "dT":0.5, "h": 10, "SOC": 1.0, "plot":False},
-            {"propQ":'eta_drive', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
+            {"propQ":'eta_drive', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":False},
             # {"propQ":'eta_p', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
             # {"propQ":'eta_m', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
             # {"propQ":'eta_c', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
