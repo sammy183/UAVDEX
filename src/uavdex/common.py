@@ -293,7 +293,7 @@ class PointDesign:
                     Uinf = None, dT = None, 
                     rho = None, h = None, 
                     SOC = None, Voc = None, t = None, 
-                    verbose = True, plot = False):
+                    verbose = True, plot = True):
         '''
         Input
         ----------------------------------------------------------------------------------------------------------
