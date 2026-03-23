@@ -590,7 +590,7 @@ def SimpleRPMeqs_Voc(RPM, *args):
     rho, Voc precalculated from h and SOC (or given directly)
     TODO: full docstring
     '''
-    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
@@ -607,7 +607,7 @@ def SimpleRPMeqs_t(RPM, *args):
     rho precalculated from h and t given to calculate SOC, Voc
     TODO: full docstring
     '''
-    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
@@ -639,7 +639,7 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -688,6 +688,8 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
         Voc, BattType = args
         return(VocFunc(SOC, BattType) - Voc)
     SOC = bisection(0, 1, VocResidual, Voc, BattType)
+    if SOC <= 1-ds:
+        return([0.0]*23)
     
     return([T, Q, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
@@ -714,7 +716,7 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -754,7 +756,10 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
     eta_drive = (eta_p*eta_g*eta_m*eta_c)*eta_b
     
-    SOC = 1.0 - (Ib*t)/(3.6*CB*np)
+    SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
+    if SOC <= 1-ds:
+        return([0.0]*23)
+
     Voc = VocFunc(SOC, BattType)
     
     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
@@ -800,7 +805,7 @@ def SimpleRPMeqsBase_Voc(RPM, *args):
     rho, Voc precalculated from h and SOC (or given directly)
     TODO: full docstring
     '''
-    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
@@ -822,7 +827,7 @@ def SimpleRPMeqsBase_t(RPM, *args):
      9      10     11    12     13    14   15  16  17  18  19  20   21   22
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
-    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
@@ -852,7 +857,7 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -898,8 +903,8 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     def VocResidual(SOC):
         return(VocFuncBase(SOC, BattType) - Voc)
     SOC = bisectionBase(0, 1, VocResidual)
-    if SOC < 0:
-        raise ValueError('SOC < 0')
+    if SOC <= 1-ds:
+        return([0.0]*23)
     
     return([T, Q, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
@@ -925,7 +930,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -973,6 +978,9 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     Q *= nmot
     
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
+    if SOC <= 1-ds:
+        return([0.0]*23)
+
     Voc = VocFuncBase(SOC, BattType)
     
     return([T, Q, RPM, 
@@ -1006,7 +1014,7 @@ def PointResultFunc(self, Uinf = None, dT = None,
     '''
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns, self.np, self.CB, self.Rb, self.BattType, 
-            self.KV, self.Rm, self.I0, self.nmot)
+            self.KV, self.Rm, self.I0, self.nmot, self.ds)
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
         
@@ -1108,7 +1116,7 @@ def LinePlotFunc(self, propQ = 'T',
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns, self.np, self.CB, self.Rb, self.BattType, 
-            self.KV, self.Rm, self.I0, self.nmot)
+            self.KV, self.Rm, self.I0, self.nmot, self.ds)
     
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
@@ -1279,7 +1287,7 @@ def ContourPlotFunc(self, propQ = 'T',
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns, self.np, self.CB, self.Rb, self.BattType, 
-            self.KV, self.Rm, self.I0, self.nmot)
+            self.KV, self.Rm, self.I0, self.nmot, self.ds)
     
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
