@@ -288,12 +288,45 @@ class PointDesign:
                             verbose = verbose, plot = plot))
         
     def ContourPlot(self, propQ = 'T',
-                    xaxis = 'Uinf',
-                    yaxis = 't',
+                    xaxis = None,
+                    yaxis = None,
                     Uinf = None, dT = None, 
                     rho = None, h = None, 
                     SOC = None, Voc = None, t = None, 
                     verbose = True, plot = False):
+        '''
+        Input
+        ----------------------------------------------------------------------------------------------------------
+            a propulsion quantity (propQ) of interest (options given by the output array)
+            
+            constant values for two of: 
+                Uinf, dT, rho/h, SOC/Voc/t
+            equal size np.arrays for the other two values
+            
+            Optional: 
+                xaxis, yaxis for plot specified from the names:
+                    ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
+
+            
+        IMPORTANT: 
+            bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
+            input arrays MUST have the same size (square input)
+
+        Output
+        ----------------------------------------------------------------------------------------------------------
+            3D np array where (0, 0, :) corresponds to 
+            
+            0  1   2       3        4      5      6      7       8    
+            T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+            
+             9      10     11    12    13    14   15  16  17  18  19  20   21   22
+            Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+            
+            (0, :, 0) corresponding to the x axis input
+            (:, 0, 0) corresponding to the y axis input
+        
+        
+        '''
         def check(val, cond, name):
             if val is None:
                 return

@@ -84,7 +84,7 @@ class TestLinePlot(unittest.TestCase):
         # self.design.Prop('22x12E')
     
     def test_lineplot_varients(self):
-        # TODO: figure out how to get the range automatically so ppl don't have to input
+        # # TODO: figure out how to get the range automatically so ppl don't have to input
         # self.design.LinePlot(propQ = 'Pw_c', 
         #              Uinf = np.linspace(0, 40, 100), 
         #              dT = 0.5, 
@@ -92,13 +92,16 @@ class TestLinePlot(unittest.TestCase):
         #              SOC = 1.0, 
         #              plot = True)
         
+        n = 1000
+        plot = False
         cases = [
-            {"propQ":'eta_drive', "Uinf":np.linspace(0, 40, 100), "dT":0.5, "h": 10, "SOC": 1.0, "plot":False},
-            {"propQ":'T', "Uinf":np.linspace(0, 40, 100), "dT":0.5, "h": 10, "SOC": 1.0, "plot":False},
-            {"propQ":'eta_drive', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":False},
-            # {"propQ":'eta_p', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
-            # {"propQ":'eta_m', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
-            # {"propQ":'eta_c', "Uinf":25, "dT":np.linspace(0.3, 1.0), "h": 10, "SOC": 1.0, "plot":True},
+            {"propQ":'eta_drive',   "Uinf":np.linspace(0, 40, n), "dT":0.5, "h": 10, "SOC": 1.0, "plot":plot},
+            {"propQ":'T',           "Uinf":np.linspace(0, 40, n), "dT":0.5, "h": 10, "SOC": 1.0, "plot":plot},
+            {"propQ":'eta_drive',   "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":plot},
+            {"propQ":'eta_drive',   "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "t": 0.0, "plot":plot}, # case for SimplifiedRPM_t
+            # {"propQ":'eta_p', "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":True},
+            # {"propQ":'eta_m', "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":True},
+            # {"propQ":'eta_c', "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":True},
         ]
         
         for i, case in enumerate(cases):
@@ -108,24 +111,48 @@ class TestLinePlot(unittest.TestCase):
                     **case
                 )
                 
-# class TestContourPlot(unittest.TestCase):
-#     def setUp(self):
-#         self.design = PointDesign()
-#         self.design.Motor('C-4130/20', nmot = 2)
-#         self.design.Battery('Gaoneng_8S_3300')
-#         self.design.Prop('16x10E')
-#         # self.design.Motor('V8110-170', nmot = 1)
-#         # self.design.Battery('Gaoneng_8S_3300')
-#         # self.design.Prop('22x12E')
+class TestContourPlot(unittest.TestCase):
+    def setUp(self):
+        self.design = PointDesign()
+        # self.design.Motor('C-4130/20', nmot = 2)
+        # self.design.Battery('Gaoneng_8S_3300')
+        # self.design.Prop('16x10E')
+        self.design.Motor('V8110-170', nmot = 1)
+        self.design.Battery('Gaoneng_8S_3300')
+        self.design.Prop('22x12E')
     
-#     def test_contourplot_varients(self):
-#         cases = []
-#         for i, case in enumerate(cases):
-#             with self.subTest(case=case):
-#                 self.design.ContourPlot(
-#                     verbose=False,
-#                     **case
-#                 )
+    def test_contourplot_varients(self):
+        n = 100
+        plot = False
+        cases = [
+            {"propQ":'eta_drive', 
+             "xaxis":"t", "yaxis":"Uinf", 
+             "Uinf":np.linspace(0, 50, n), "t": np.linspace(0, 300, n), 
+             "h":50, "dT":0.8, "plot":plot},
+            {"propQ":'eta_drive', 
+             "xaxis":"dT", "yaxis":"Uinf", 
+             "Uinf":np.linspace(0, 50, n), "t":30, 
+             "h":50, "dT":np.linspace(0.4, 1, n), "plot":plot},
+            {"propQ":'eta_drive', 
+             "xaxis":"Uinf", "yaxis":"h", 
+             "Uinf":np.linspace(0, 50, n), "t":30, 
+             "h":np.linspace(0, 1000, n), "dT":0.8, "plot":plot},
+            {"propQ":'eta_drive', 
+             # "xaxis":"t", "yaxis":"h", 
+             "Uinf":25, "t":np.linspace(0, 300, n), 
+             "h":np.linspace(0, 1000, n), "dT":0.8, "plot":plot},
+            {"propQ":'eta_drive', 
+             # "xaxis":"t", "yaxis":"Uinf", 
+             "Uinf":np.linspace(0, 50, n), "t": np.linspace(0, 300, n), 
+             "h":50, "dT":0.8, "plot":plot},
+            ]
+        
+        for i, case in enumerate(cases):
+            with self.subTest(case=case):
+                self.design.ContourPlot(
+                    verbose=False,
+                    **case
+                )
         
 
 if __name__ == '__main__':

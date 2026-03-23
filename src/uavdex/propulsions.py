@@ -135,22 +135,11 @@ Significant loss of accuracy due to the constant I0 assumption compared to the o
 @author: NASSAS
 """
 
-import pandas as pd
 import numpy as np
 from numpy.polynomial import Polynomial
-from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-import scipy.optimize as opt
-import time
-from gekko import GEKKO
-import multiprocessing
-from functools import partial
-import itertools
-import numba
-from numba import njit, jit
-from numba.typed import List
-from numba.types import unicode_type
+from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
 
@@ -205,7 +194,6 @@ def bisection(low, high, func, *args):
     tol = 1e-3
     max_iter = 100
     for _ in range(max_iter):
-        print(low, high)
         mid = (low + high) / 2
         res_mid = func(mid, *args)
         
@@ -564,7 +552,7 @@ def CTBase(RPM, J, rpm_list, numba_prop_data):
 
 
 #%% ####################### PROPULSION MODELS #######################
-@njit(fasthmath = True)
+@njit(fastmath = True)
 def VocFunc(SOC, BattType):
     '''
     Determines the battery Voltage (Voc) as a function of State of Charge (SOC) given from 0-1 for a specified battery chemistry
@@ -602,7 +590,7 @@ def SimpleRPMeqs_Voc(RPM, *args):
     rho, Voc precalculated from h and SOC (or given directly)
     TODO: full docstring
     '''
-    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
     J = Uinf/((RPM/60)*d)
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
@@ -619,13 +607,13 @@ def SimpleRPMeqs_t(RPM, *args):
     rho precalculated from h and t given to calculate SOC, Voc
     TODO: full docstring
     '''
-    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot = args
+    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot = args
     J = Uinf/((RPM/60)*d)
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
     Ib = (Im*nmot)/eta_c
-    SOC = 1.0 - (Ib*t)/(3.6*CB*np)
+    SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
     Vb = ns*VocFunc(SOC, BattType) - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
@@ -633,7 +621,7 @@ def SimpleRPMeqs_t(RPM, *args):
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
 @njit(fastmath = True)
-def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, SOC, *args):
+def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     '''
     rho given directly or precalculated from h
     Voc given directly or precalculated from SOC
@@ -667,9 +655,11 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, SOC, *args):
     # Vbattinit = throttle*3.6*ns
     high = rpm_list[-1]
     low = rpm_list[0]
-    RPM = bisection(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g *args)
+    RPM = bisection(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
     
-    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g *args)
+    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
+    if CP == 0.0:
+        return([0.0]*23)
     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -693,10 +683,11 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, SOC, *args):
     Q *= nmot
     
     # Calculate SOC via bisection between 0, 1
-    @njit(fastmath = True)
-    def VocResidual(SOC):
+    # @njit(fastmath = True)
+    def VocResidual(SOC, *args):
+        Voc, BattType = args
         return(VocFunc(SOC, BattType) - Voc)
-    SOC = bisection(0, 1, VocResidual)
+    SOC = bisection(0, 1, VocResidual, Voc, BattType)
     
     return([T, Q, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
@@ -739,9 +730,11 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     # Vbattinit = throttle*3.6*ns
     high = rpm_list[-1]
     low = rpm_list[0]
-    RPM = bisection(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g *args)
+    RPM = bisection(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g, *args)
     
-    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_t(RPM, t, Uinf, dT, rho, eta_c, eta_g *args)
+    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
+    if CP == 0.0:
+        return([0.0]*23)
     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -877,6 +870,8 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     RPM = bisectionBase(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
+    if CP == 0.0:
+        return([0.0]*23)
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -884,8 +879,6 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     Pout =  rho*((RPM/60)**3)*(d**5)*CP     # mechanical power out of ONE motor
     Pin_m = Vm*Im                           # electric power into one motor
     Pin_c = Vc*Ic                           # electric power into one controller
-    if CP == 0.0:
-        return([0.0]*23)
     
     # Waste power calculations (via power loss); useful for heat estimation
     Pw_m = Pin_m - Pout
@@ -951,12 +944,10 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     RPM = bisectionBase(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g, *args)
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
-    if RPM < 0.0:
-        raise ValueError('Infeasible input combination')
+    if CP == 0.0:
+        return([0.0]*23)
         
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data)
-    if CT <= 0:
-        return([0.0]*23)
     Ic = Ib/nmot 
     Vc = Vb 
     
@@ -1086,9 +1077,6 @@ def PointResultFunc(self, Uinf = None, dT = None,
 #         thrusts.append(propQ[0])
 #     return(outputs, thrusts)
 
-# @njit(fastmath = True)
-# def process_LinePLot_Voc(clean_inputs, *args):
-
 def LinePlotFunc(self, propQ = 'T',
                  Uinf = None, dT = None, 
                  rho = None, h = None, 
@@ -1166,8 +1154,8 @@ def LinePlotFunc(self, propQ = 'T',
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input = copy.deepcopy(clean_inputs)
             inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
-            # todo, add speedup based on when the data starts and ends 
+            PropQs[i, :] = SimplifiedRPM_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            # TODO add speedup based on when the data starts and ends 
             # (assume it has no discontinuities in between!)
 
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
@@ -1180,7 +1168,7 @@ def LinePlotFunc(self, propQ = 'T',
         inner_input = copy.deepcopy(clean_inputs)
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPMBase_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            PropQs[i, :] = SimplifiedRPM_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
             # todo, add speedup based on when the data starts and ends 
             # (assume it has no discontinuities in between!)
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
@@ -1247,22 +1235,28 @@ def LinePlotFunc(self, propQ = 'T',
 
 # can plot any two of Uinf, dT, h/rho, t/Voc/SOC
 def ContourPlotFunc(self, propQ = 'T',
-                    xaxis = 'Uinf',
-                    yaxis = 't',
+                    xaxis = None,
+                    yaxis = None,
                     Uinf = None, dT = None, 
                     rho = None, h = None, 
                     SOC = None, Voc = None, t = None, 
-                    verbose = True, plot = False):
+                    verbose = True, plot = False,
+                    colormap = 'viridis', 
+                    grade = 30):
     '''
     Input
     ----------------------------------------------------------------------------------------------------------
         a propulsion quantity (propQ) of interest (options given by the output array)
+        xaxis, yaxis for plot specified from the names:
+            ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']
         
-        constant values for two of: Uinf, dT, rho/h, SOC/Voc/t
-        a range of the other two values!
+        constant values for two of: 
+            SOC/Voc/t, Uinf, dT, rho/h
+        np.array for the other two values!
         
     IMPORTANT: 
         bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
+        input arrays MUST have the same size (square input)
 
     Output
     ----------------------------------------------------------------------------------------------------------
@@ -1277,7 +1271,10 @@ def ContourPlotFunc(self, propQ = 'T',
         (0, :, 0) corresponding to the x axis input
         (:, 0, 0) corresponding to the y axis input
         
-    TODO: numbafy
+        
+    Little note:
+        Might be confusing why input_names is in a different order compared to LinePlot. That's to provide
+        better xaxis, yaxis selection by default (time on horizontal axis, altitude on vertical, etc)
     '''
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
@@ -1290,724 +1287,122 @@ def ContourPlotFunc(self, propQ = 'T',
     if not exactly_one_defined(rho, h):
         raise ValueError("Exactly one of h or rho must be provided")
     
-    # Find the np array and the constants to use
-    full_inputs = [Uinf, dT, rho, h, SOC, Voc, t]
-    full_input_names = ['Velocity (m/s)', 'Throttle (0-1)', 
-                        'Density (kg/m\u00B3)', 'Altitude (m)', 
-                        'State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)']
-    arrs = 0
-    idxarrs = []
-    inputarrs = []
-    for i, specinput in enumerate(full_inputs):
-        if isinstance(specinput, np.ndarray):
-            arrs += 1
-            idxarrs.append(i)
-            inputarrs.append(specinput)
-    if arrs != 2:
-        raise KeyError("Exactly two arrays of inputs must be provided")
-    
-    input_names = [full_input_names[idxarrs[0]], full_input_names[idxarrs[1]]]
-    
-    # convert h to density
-    if h is not None:
-        rho = atm().rho(h)
-        
-    # convert SOC to Voc
-    if SOC is not None:
-        Voc = VocFuncBase(SOC, self.BattType)
-    
-    # collapsing indexes
-    for i, idxarr in enumerate(idxarrs):
-        if idxarr == 3:
-            idxarrs[i] = 2 
-        elif idxarr == 4 or idxarr == 5 or idxarr == 6:
-            idxarrs[i] = 3 
+    full_inputs = [SOC, Voc, t, Uinf, dT, rho, h]
+    input_names = ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']
 
-    # TODO
-    # TODO
-    # TODO
-    # TODO
-    # TODO
-    # must find some way to define one array as the "outer" loop and another as the inner loop
-    # outer corresponds to yaxis variable
-    # need to use yaxis definition to determine which is used for the plotting
+    # dictionary formulation
+    provided_inputs = {name: val for name, val in zip(input_names, full_inputs) if val is not None}
+    arrays = {}
+    constants = {}
     
-    if t is None:
-        clean_inputs = [Uinf, dT, rho, Voc] # if Voc is arr, SOC is arr and vice versa
-        PropQs = np.zeros((clean_inputs[idxarr].size, 23))
-        for i, value in enumerate(clean_inputs[idxarr]):
-            inner_input = copy.deepcopy(clean_inputs)
-            inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPM_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
-            
-            # todo, add speedup based on when the data starts and ends 
-            # (assume it has no discontinuities in between!)
-            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
-            #     endidx = i 
-            #     break
-        endidx = clean_inputs[idxarr].size
+    for name, val in provided_inputs.items():
+        if isinstance(val, (np.ndarray, list, tuple)):
+            arrays[name] = np.asarray(val)
+        else:
+            constants[name] = val
+
+    if len(arrays) != 2:
+        raise ValueError(f"Expected exactly 2 array inputs, but found {len(arrays)}: {list(arrays.keys())}")
+
+    if xaxis != None:
+        if xaxis not in arrays:
+            raise ValueError(f'The specified xaxis ({xaxis}) must be given as an array (i.e. Uinf = np.linspace(0, 30, 50))')
     else:
-        clean_inputs = [Uinf, dT, rho, t]
-        PropQs = np.zeros((clean_inputs[idxarr].size, 23))
-        inner_input = copy.deepcopy(clean_inputs)
-        for i, value in enumerate(clean_inputs[idxarr]):
-            inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPM_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+        xaxis = list(arrays)[0]
+    if yaxis != None:
+        if yaxis not in arrays:
+            raise ValueError(f'The specified yaxis ({yaxis}) must be given as an array (i.e. Uinf = np.linspace(0, 30, 50))')
+    else:
+        yaxis = list(arrays)[1]
+    
+    if xaxis not in arrays or yaxis not in arrays:
+        raise ValueError(f"The specified xaxis ('{xaxis}') and yaxis ('{yaxis}') must match the provided array inputs.")
+    
+    x_array = arrays[xaxis]
+    y_array = arrays[yaxis]
+    
+    if x_array.shape != y_array.shape:
+        raise ValueError(f"Input arrays must have the same size. Got {x_array.shape} and {y_array.shape}.")
+
+    grid_size = len(x_array)
+    output_array = np.zeros((grid_size, grid_size, 23))
+
+    for i, y_val in enumerate(tqdm(y_array)):
+        for j, x_val in enumerate(x_array):
             
-            # todo, add speedup based on when the data starts and ends 
-            # (assume it has no discontinuities in between!)
-            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
-            #     endidx = i 
-            #     break
-        
-            # if PropQs[i, -1] <= 0.1: # minimum SOC = 10% for batteries
-            #     endidx = i
-            #     break
-        endidx = clean_inputs[idxarr].size
-    inputarrs = inputarrs[:, :endidx]
-    PropQs = PropQs[:endidx, :]
-    
-    
-#%% OLD CONTOURPLOT FUNCTIONS
-
-# @njit(fastmath = True)
-# def ModelCalcsNumbaV4(velocity, t, throttle, *args):
-#     '''
-#     old RPM formulation adjusted for throttle with a fixed ESC eff correction!
-#     '''
-#     fPWM = 12e3     # Hz (1/s)
-#     Tsd = 200e-9    # s
-#     Rds = 1e-3      # Ohm
-#     Psb = 0.5       # W
-    
-#     # ASSUME ESC EFF = 0.9 here
-#     eta_c = 0.9
-    
-#     rpm_list, coef_numba_prop_data, CB, ns, Rint, KV, Rm, nmot, I0, ds, rho, d = args
-    
-#     def residualfunc(RPM, *args):
-#         velocity, t, dT, eta_c, fPWM, Tsd, Rds, Psb, rpm_list, coef_numba_prop_data, CB, ns, Rint, KV, Rm, nmot, I0, ds, rho, d = args
-        
-#         J = velocity/((RPM/60)*d) # advance ratio J = velocity/nD where n is rev/s and D is propeller diameter in m (velocity in m/s ofc)
-#         CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
-#         Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
-#         Im = Q*KV*(np.pi/30) + I0 # for one motor
-#         Ib = (nmot/eta_c)*Im
-#         SOC = 1.0 - (Ib*t)/(CB*3.6)
-#         Voc = 3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3
-#         Vb = ns*(Voc) - Ib*Rint
-#         Vm = dT*Vb
-#         RPMcalc = KV*(Vm - Im*Rm)
-#         res = RPMcalc - RPM
+            current_state = constants.copy()
+            current_state[xaxis] = x_val
+            current_state[yaxis] = y_val
             
-#         return(res)
-
-#     # Vbattinit = throttle*3.6*ns
-#     high = rpm_list[-1]
-#     low = rpm_list[0]
-#     RPM = bisection(low, high, residualfunc, velocity, t, throttle, eta_c, fPWM, Tsd, Rds, Psb, *args)
-    
-#     J = velocity/((RPM/60)*d) # advance ratio J = velocity/nD where n is rev/s and D is propeller diameter in m (velocity in m/s ofc)
-#     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
-#     Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
-#     Im = Q*KV*(np.pi/30) + I0 # for one motor
-#     Ib = (nmot/eta_c)*Im
-#     SOC = 1.0 - (Ib*t)/(CB*3.6)
-#     Voc = 3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3
-#     Vb = ns*(Voc) - Ib*Rint
-#     Vm = throttle*Vb
-#     Pin_m = Vm*Im 
-    
-    
-#     T = nmot*rho*((RPM/60)**2)*(d**4)*CTNumba(RPM, J, rpm_list, coef_numba_prop_data)
-    
-#     if SOC < (1 - ds) or Ib < 0 or T <= 0:
-#         return 0.0, 0.0, 0.0, 0.0
-#     return T, Pin_m, Ib, RPM
-
-# def GetPointDesignDataV3(self, m, throttle = None):
-#     '''Now updates Vinf and t to get better axes'''    
-    
-#     print('\nFinding maximum velocities (please wait ~10s)')
-    
-#     start = time.perf_counter()
-#     VmaxTDend, t_Vmax = GekkoVmaxForData(self, self.ds, Tlimit=True)
-#     VmaxReal = VmaxLean(self, 0.0, Tlimit=True)
-#     Vmax = self.PROP_DATA[self.RPM_VALUES[-1]]['V'].max()
-    
-#     Vnew = np.linspace(0.0, VmaxReal + 20*ftm, m)
-#     tmin, V_tmin = getGekkoRuntimeMin(self, Vmax) # I'm not understanding how this tmin is accurate but the Vmax isn't???
-#     tnew = np.linspace(0.0, t_Vmax + 30, m)
-#     end = time.perf_counter()
-#     print(f'Maximum velocity = {VmaxReal/ftm:.2f} fps at runtime = 0.0s')
-#     print(f'Minimum runtime = {tmin:.2f}s at velocity = {V_tmin/ftm:.2f} fps')
-#     print(f'Maximum runtime = {t_Vmax:.2f}s at velocity = {VmaxTDend/ftm:.2f} fps')
-#     print(f'Time Taken: {end-start:.2f}s\n')
-
-#     print('Starting data collection')
-#     rpm_list = np.array(self.RPM_VALUES)
-    
-#     # rpm_list = np.array(self.RPM_VALUES)
-
-#     # VmaxTDend, t_Vmax = GekkoVmaxForData(self, self.ds, Tlimit=True)
-#     # VmaxReal = VmaxLean(self, 0.0, Tlimit=True)
-#     # Vmax = self.PROP_DATA[self.RPM_VALUES[-1]]['V'].max()
-    
-#     # Vnew = np.linspace(0.0, VmaxReal + 20*ftm, m)
-#     # tmin, V_tmin = getGekkoRuntimeMin(self, Vmax) # I'm not understanding how this tmin is accurate but the Vmax isn't???
-#     # end = time.perf_counter()
-    
-#     # # t_Vmax correction based on throttle 
-#     # ##### VERY INEFICIENT, MAKE A NUMBA FUNCTION BASED THAT FINDS T AT THE EFFECTIVE V_MAX #####
-#     # # if throttle < 1.0:
-#     # #     t_Vmax = MaxRuntimeNumba(VmaxTDend, throttle, rpm_list, self.COEF_NUMBA_PROP_DATA, 
-#     # #                     self.CB, self.ns, self.Rb, self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
-    
-#     # tnew = np.linspace(0.0, t_Vmax + 30*(3/throttle), m) # change back to + 30 when you get the scaling right
-
-#     # print(f'Maximum velocity = {VmaxReal/ftm:.2f} fps at runtime = 0.0s')
-#     # # print(f'Minimum runtime = {tmin:.2f}s at velocity = {V_tmin/ftm:.2f} fps')
-#     # print(f'Maximum runtime = {t_Vmax:.2f}s at velocity = {VmaxTDend/ftm:.2f} fps')
-#     # print(f'Time Taken: {end-start:.2f}s\n')
-
-#     # print('Starting data collection')
-
-#     T = np.zeros((m, m))
-#     Itot = np.zeros((m, m))
-#     P = np.zeros((m, m))
-#     value4 = np.zeros((m, m))
-    
-#     if throttle == None:
-#         throttle = self.throttle
-#     else:
-#         throttle = throttle
-    
-#     for i, velocity in enumerate(tqdm(Vnew)):
-#         if velocity > VmaxReal + 30*ftm:
-#             break
-#         else:
-#             for j, tspec in enumerate(tnew):
-#                 # NOT RETURNING CORRECT VALUES FOR SOME CASES!!!
-#                 Tspec, Pspec, Itotspec, value4spec = ModelCalcsNumbaV4(velocity, tspec, throttle, rpm_list, 
-#                                                                       self.COEF_NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
-#                                                                       self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
-#                 # if Tspec == 0:
-#                 #     # switch to slower but more reliable Scipy formulation
-#                 #     Tspec, Pspec, Itotspec, RPMspec = ModelCalcs(self, velocity, tspec)
+            curr_Uinf = current_state['Uinf']
+            curr_dT = current_state['dT']
+            
+            if 'rho' in current_state:
+                curr_rho = current_state['rho']
+            else:
+                curr_rho = atm().rho(current_state['h'])
                 
-#                 if Tspec == 0:
-#                     if tspec > tmin:
-#                         break
-#                     else:
-#                         continue
-#                 else:
-#                     T[i, j] = Tspec
-#                     P[i, j] = Pspec
-#                     Itot[i, j] = Itotspec
-#                     value4[i, j] = value4spec
-#     Vnew = Vnew/ftm
-#     T = T/lbfN
-    
-#     self.PointDesignData = [Vnew, tnew, T, P, Itot, value4]
-#     return(Vnew, tnew, T, P, Itot, value4)
-
-
-#%%
-
-    # cases:
-    # Uinf arr, dT, rho, Voc
-    # Uinf arr, dT, rho, t
-    # Uinf, dT arr, rho, Voc
-    # Uinf, dT arr, rho, t
-    # Uinf, dT, rho arr, Voc
-    # Uinf, dT, rho arr, t
-    # Uinf, dT, rho, Voc arr
-    # Uinf, dT, rho, t arr
-    
-    # decision tree: t or Voc? --> Uinf arr ? --> dT arr ? --> rho arr? 
-    
+            # Select between Voc, SOC, t
+            if 'Voc' in current_state:
+                curr_Voc = current_state['Voc']
+                output_vector = SimplifiedRPM_Voc(curr_Uinf, curr_dT, curr_rho, curr_Voc, *args)
+            elif 'SOC' in current_state:
+                curr_Voc =  VocFuncBase(current_state['SOC'], self.BattType) 
+                output_vector = SimplifiedRPM_Voc(curr_Uinf, curr_dT, curr_rho, curr_Voc, *args)
+            else:                
+                #### t input
+                curr_t = current_state['t']
+                output_vector = SimplifiedRPM_t(curr_Uinf, curr_dT, curr_rho, curr_t, *args)
             
-            
-    # def LinePlot_Vinf(self, SOC_Voc_t, dT, plot = True, n = 200, sigfigs = 4):
-    #     '''
-    #     Line plot of propQ vs Vinf at fixed SOC/Voc/t, dT
+            output_array[i, j, :] = output_vector
         
-    #     Needs to accomidate SOC, Voc, t inputs
-        
-    #     (propQ = propulsion quantity, see SimplifiedRPM documentation for options) 
-    #     '''
-        
-    #     # checking that requested propQ exists
-    #     propQs = ['thrust', 'torque', 'RPM', 'eta_drive', 'eta_p', 'eta_m', 'eta_c',  
-    #               'Pout', 'Pin_m', 'Pin_c', 'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 'Voc', 'SOC']
-        
-    #     try:
-    #         interestindex = propQs.index(self.propQ)
-    #         if self.SOCinput:
-    #             print(f'\nPlotting {self.propQ} for SOC = {SOC_Voc_t*100:.0f}%, throttle = {dT*100:.0f}%')
-    #         elif self.Vocinput:
-    #             print(f'\nPlotting {self.propQ} for Voc = {SOC_Voc_t:.4f} V, throttle = {dT*100:.0f}%')
-    #         elif self.tinput:
-    #             print(f'\nPlotting {self.propQ} for t = {SOC_Voc_t:.1f} s, throttle = {dT*100:.0f}%')
-    #     except:
-    #         print('Quantity not available, please choose one of:\nthrust, torque, RPM, eta_p, eta_m, eta_c, eta_drive, Pout, Pin_m, Pin_c, Im, Ic, Ib, Voc, Vbat, Vm, Vc, SOC')
-    #         return()
-        
-    #     rpm_list = np.array(self.RPM_VALUES)
+    if plot:
+        # TODO: add in Ilimit, Plimit (from motor/battery/ESC database)
+        # TODO: add in T = D
+        # TODO: limit plot (or data gathering range automatically 
+        # so ppl don't have to input values 
+        # they just specify which variable they want to be the array (simple)
 
-    #     #################################################################
-    #     #### NEED A FUNCTION THAT GETS THE MAXIMUM VELOCITY FIRST #######
-    #     Vs = np.linspace(0, 50, n)        # FOR NOW APPROXIMATE AS 50 M/S
-    #     #################################################################
+        fig, ax = plt.subplots(figsize = (6, 4))
         
-    #     args = (rpm_list, self.COEF_NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
-    #             self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
+        propqidx = propQshort.index(propQ)
+        propQ_spec = output_array[:, :, propqidx]
         
-    #     if self.tinput:
-    #         outs, Ts = process_LinePlot_Vinf_t(Vs, SOC_Voc_t, dT, interestindex, *args)
-    #         # if outs.count(0.0) > 3:
-    #         #     raise ValueError('Warning: input runtime too long')
-    #         # TODO: find a way to properly illustrate to ignorant users that where the plot goes to 0 is when SOC is less than max discharge
-    #     else:
-    #         outs, Ts = process_LinePlot_Vinf_SOC(Vs, SOC_Voc_t, dT, interestindex, *args)        
-
-    #     propQs = np.array(outs)
-    #     T = np.array(Ts)
-        
-    #     if self.propQ == 'thrust': # convert to lbf if thrust is used 
-    #         propQs /= lbfN
-
-    #     # finding cruise velocity at the given SOC, dT
-    #     D = 0.5*self.rho*self.CD*self.Sw*(Vs**2) # metric here
-    #     cruise_idx = np.argmin(np.abs(T-D))
-    #     cruise_D = D[cruise_idx]
-    #     cruise_V = np.sqrt(cruise_D/(0.5*self.rho*self.CD*self.Sw)) # in m/s
-        
-    #     # TODO: add max/min and cruise values to the plot
-    #     print(f'Max {self.propQ} = {propQs.max():.{sigfigs}f} at Vinf = {Vs[np.argmax(propQs)]/ftm:.{sigfigs}f} ft/s')
-    #     print(f'Min {self.propQ} = {propQs.min():.{sigfigs}f} at Vinf = {Vs[np.argmin(propQs)]/ftm:.{sigfigs}f} ft/s')
-    #     print(f'at cruise Vinf = {cruise_V/ftm:.{sigfigs}f} ft/s, {self.propQ} = {propQs[cruise_idx]:.{sigfigs}f}')
-        
-    #     if plot:
-    #         fig, ax = plt.subplots(figsize = (6, 4), dpi = 1000)
-                    
-    #         ax.plot(Vs/ftm, propQs) 
-    #         ax.plot([cruise_V/ftm, cruise_V/ftm], ax.get_ylim(), '--', color = 'red', label = 'Cruise Velocity')
-    #         ax.grid()
-    #         ax.minorticks_on()
-    #         plt.legend()
-    #         plt.ylabel(f'{propQnames[interestindex]}') # need to add a way to get units in correctly
-    #         plt.xlabel('Velocity (ft/s)')
-            
-    #         # TODO: find a better way to say motor(s) depending on nmot
-    #         if self.nmot > 1:
-    #             s = 's'
-    #         else:
-    #             s = ''
-                
-    #         if self.SOCinput:
-    #             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t*100:.0f}% SOC and {dT*100:.0f}% throttle')
-    #         elif self.Vocinput:
-    #             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.4f} V Voc and {dT*100:.0f}% throttle')
-    #         else:
-    #             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.1f} s runtime and {dT*100:.0f}% throttle')
-    #         plt.show()
-        
-    #     return(outs, cruise_V)
+        X, Y = np.meshgrid(x_array, y_array)
+        propQ_spec_alt = propQ_spec[propQ_spec > 0]    # very good for removing all the violation keys, and finding the max, but flattens the array
+        lower = propQ_spec_alt.min()                    # finds the minimum Score discounting violation trips
+        upper = propQ_spec.max()
+        img = ax.contourf(X, Y, propQ_spec, cmap = colormap, levels = np.linspace(lower, upper, grade))
+        fig.colorbar(img, ticks = np.linspace(lower, upper, 11), pad = 0.025, shrink = 1.0, spacing = 'uniform', label=f'{propQnames[propqidx]}')
     
-    
-    # fundamentally will use either SimplifiedRPM_Voc or SimplifiedRPM_t depending on what's defined
-    
-    
-
-
-# #%% OLD WORK
-
-# # TODO: Gather validation data on models and add some notes about assumption accuracy to the documentation
-# # TODO: add in switch between SOC/t/Vsoc inputs!
-# @njit(fastmath = True)
-# def SimplifiedRPM(Vinf, dT, SOC_Voc, *args):
-#     '''
-#     SimplifiedRPM applies a fixed ESC efficiency. This assumption allows for 
-#     computation simplifications. # TODO: ADD VALIDATION DATA ABOUT DROP IN ACCURACY!
-    
-#     Inputs:
-#     ------------------------------------------------------------------------------------------------------------------
-#     Vinf:       freestream velocity in m/s
-#     dT:         throttle setting (0-1) corresponding to the duty ratio of the ESC
-#     SOC/Voc:    battery State Of Charge (0-1) OR cell voltage (2.6-4.2 for LiPo)
-    
-#     *args has a list of propulsion characteristics and constants:
-#         rpm_list is the list of provided RPMs with the corresponding coef_numba_prop_data
-#         CB:     battery capacity (mAh)
-#         ns:     number of cells in series
-#         Rb:     battery resistance (Ohm)
-#         KV:     motor constant (RPM/Volts)
-#         Rm:     motor resistance (Ohm)
-#         nmot:   number of motors
+        # to get correct names: xaxis, yaxis --> input names idx --> full_input_names idx --> full_input_names value
+        full_input_names = ['State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)', 
+                            'Velocity (m/s)', 'Throttle (0-1)', 
+                            'Density (kg/m\u00B3)', 'Altitude (m)']
+        xname_idx = 0
+        yname_idx = 0
+        for i, name in enumerate(input_names):
+            if name == xaxis:
+                xname_idx = i
+            elif name == yaxis:
+                yname_idx = i
         
-#         I0: motor no load current (A) 
-#         ^^^^^^^^^^^^ Treatment of I0 is the largest simplification in the model; 
-#                      in practice I0 is not constant but varies linearly with Vm (Gong 2018)
+        plt.xlabel(full_input_names[xname_idx])
+        plt.ylabel(full_input_names[yname_idx])
         
-#         ds:     max discharge (as a fraction between 0.0-1.0) 
-#         rho:    air density (kg/m3)
-#         d:      prop diameter (m)
+        # get short names of inputs along with title string
+        parts = []
+        for name, val in zip(input_names, full_inputs):
+            if val is None:
+                continue
+            if isinstance(val, np.ndarray):
+                continue  # skip arrays
+            parts.append(f"{name} = {val}")
+        title_str = ", ".join(parts)
+        plt.title(f'{xaxis}, {yaxis} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+        plt.show()
         
     
-#     Outputs:
-#     ------------------------------------------------------------------------------------------------------------------
-
-#     a list of the following values with corresponding indicies,
-    
-#         0, 1,   2,     3,       4,     5,     6,     7,     8,     9,  10, 11, 12, 13, 14, 15, 16,    17
-#         T, Q, RPM, eta_drive, eta_p, eta_m, eta_c, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC_Voc
-    
-#     where:
-        
-#         T           thrust (lbf) (combined for all motors)
-#         Q           torque (N*m) (combined for all motors)
-#         RPM
-        
-#         eta_drive   combined efficiency
-#         eta_p       prop efficiency
-#         eta_m       motor efficiency
-#         eta_c       controller (ESC) efficiency
-        
-#         Pout        for one motor mechanical W (Q*kt = Q*KV*(pi/30))
-#         Pin_m       for one motor electric W
-#         Pin_c       for one ESC electric W
-        
-#         Im          motor current
-#         Ic          controller current
-#         Ib          battery current
-        
-#         Vm          motor voltage
-#         Vc          controller voltage
-#         Vb          battery voltage
-#         Voc         cell voltage (open circuit)
-    
-#     While selection of whether to use the combined variable or the variable for one motor might seem arbitrary,
-#     it was chosen based off constraint requirements. Constraining by the motor Pmax requires knowing the electrical
-#     power in one motor. Calculating cruise velocity requires knowing the total thrust. 
-#     '''
-#     ##### Assume ESC efficiency = 0.93 (93%) ##### 
-#     # note: max ESC efficiency occurs at dT = 1.0
-#     eta_c = 0.93
-
-#     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-#     rpm_list, coef_numba_prop_data, CB, ns, Rb, KV, Rm, nmot, I0, ds, rho, d = args
-
-#     # when inputing SOC, Voc is constant. When inputting t and using the constant Ib approximation, it has to be included inside the residual function (so make a new function for that!)
-    
-#     # stopgap solution, works because SOC will always be between 0-1 and Voc (for LiPo batteries) will always be > 2.5
-#     # could pose problems if you're trying to integrate NiCaD batteries later
-#     if SOC_Voc > 1.0:
-#         Voc = SOC_Voc
-#     else:
-#         Voc = VocFunc(SOC_Voc)
-        
-#     def residualfunc(RPM, *args):
-#         RPMcalc = SimpleRPMeqs(RPM, *args)[0]
-#         res = RPMcalc - RPM
-#         return(res)
-
-#     # Vbattinit = throttle*3.6*ns
-#     high = rpm_list[-1]
-#     low = rpm_list[0]
-#     RPM = bisection(low, high, residualfunc, Vinf, Voc, dT, eta_c, *args)
-    
-#     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs(RPM, Vinf, Voc, dT, eta_c, *args)
-#     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
-#     Ic = Ib/nmot 
-#     Vc = Vb 
-    
-#     Pout =  rho*((RPM/60)**3)*(d**5)*CP     # mechanical power out of ONE motor
-#     Pin_m = Vm*Im                           # electric power into one motor
-#     Pin_c = Vc*Ic                           # electric power into one controller
-    
-#     eta_p = (CT*J)/CP
-#     eta_m = Pout/Pin_m 
-#     eta_c = Pin_m/Pin_c 
-#     eta_drive = eta_p*eta_m*eta_c
-    
-#     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
-#     Q *= nmot
-#     return([T, Q, RPM, eta_drive, eta_p, eta_m, eta_c, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC_Voc])
-
-# @njit(fastmath = True)
-# def SimpleRPMeqs_t(RPM, *args):
-#     Vinf, t, dT, eta_c, rpm_list, coef_numba_prop_data, CB, ns, Rb, KV, Rm, nmot, I0, ds, rho, d = args
-#     J = Vinf/((RPM/60)*d) # advance ratio J = velocity/nD where n is rev/s and D is propeller diameter in m (velocity in m/s ofc)
-#     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
-#     Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
-#     Im = Q*KV*(np.pi/30) + I0 # for one motor
-#     Ib = (Im*nmot)/eta_c
-#     SOC = 1.0 - (Ib*t)/(CB*3.6)
-#     Vb = ns*(VocFunc(SOC)) - Ib*Rb
-#     Vm = dT*Vb
-#     RPMcalc = KV*(Vm - Im*Rm)
-#     return(RPMcalc, J, CP, Q, SOC, Im, Ib, Vb, Vm)
-
-# @njit(fastmath = True)
-# def SimplifiedRPM_t(Vinf, dT, t, *args):
-#     '''Same as SimplifiedRPM but assumes a constant current across a specified runtime
-    
-#     Returns zero for all values when SOC < the designated max, discharge'''
-#     eta_c = 0.93
-#     rpm_list, coef_numba_prop_data, CB, ns, Rb, KV, Rm, nmot, I0, ds, rho, d = args
-    
-#     def residualfunc(RPM, *args):
-#         RPMcalc = SimpleRPMeqs_t(RPM, *args)[0]
-#         res = RPMcalc - RPM
-#         return(res)
-
-#     # Vbattinit = throttle*3.6*ns
-#     high = rpm_list[-1]
-#     low = rpm_list[0]
-#     RPM = bisection(low, high, residualfunc, Vinf, t, dT, eta_c, *args)
-    
-#     _, J, CP, Q, SOC, Im, Ib, Vb, Vm = SimpleRPMeqs_t(RPM, Vinf, t, dT, eta_c, *args)
-    
-#     if SOC < 1 - ds:
-#         return([0.0]*20)
-    
-#     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
-#     Ic = Ib/nmot 
-#     Vc = Vb 
-#     Voc = VocFunc(SOC)
-    
-#     Pout =  rho*((RPM/60)**3)*(d**5)*CP     # mechanical power out of ONE motor
-#     Pin_m = Vm*Im                           # electric power into one motor
-#     Pin_c = Vc*Ic                           # electric power into one controller
-    
-#     eta_p = (CT*J)/CP
-#     eta_m = Pout/Pin_m 
-#     eta_c = Pin_m/Pin_c 
-#     eta_drive = eta_p*eta_m*eta_c
-    
-#     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
-#     Q *= nmot
-#     return([T, Q, RPM, eta_drive, eta_p, eta_m, eta_c, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC*100])
-    
-
-# ############## Non-numbified functions for faster PointResults ##############
-# def VocFuncBase_LiPo(SOC):
-#     return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
-
-# def VocFuncBase_Liion(SOC):
-#     '''
-#     Li-ion!!
-#     https://www.researchgate.net/publication/346515863_Comparison_of_Lithium-Ion_Battery_Pack_Models_Based_on_Test_Data_from_Idaho_and_Argonne_National_Laboratories
-    
-#     Using the i3 battery pack bc it seems most representative (keep in mind that it is older than most)
-#     '''
-#     # i3_coeffs = [-4.48, 9.09, -7.08, 2.32, -0.76, 4.10]
-#     return(-4.48*((1-SOC)**5) + 9.09*((1-SOC)**4) - 7.08*((1-SOC)**3) + 2.32*((1-SOC)**2) - 0.76*(1-SOC) + 4.10)
-
-# def SimpleRPMeqsBase(RPM, *args):
-#     Vinf, Voc, dT, eta_c, rpm_list, coef_numba_prop_data, CB, ns, Rb, KV, Rm, nmot, I0, ds, rho, d = args
-#     J = Vinf/((RPM/60)*d) # advance ratio J = velocity/nD where n is rev/s and D is propeller diameter in m (velocity in m/s ofc)
-#     CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
-#     Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
-#     Im = Q*KV*(np.pi/30) + I0 # for one motor
-#     Ib = (Im*nmot)/eta_c
-#     Vb = ns*(Voc) - Ib*Rb
-#     Vm = dT*Vb
-#     RPMcalc = KV*(Vm - Im*Rm)
-#     return(RPMcalc, J, CP, Q, Im, Ib, Vb, Vm)
-
-# def SimplifiedRPMBase(Vinf, dT, SOC_Voc, *args):
-#     eta_c = 0.93
-#     rpm_list, coef_numba_prop_data, CB, ns, Rb, KV, Rm, nmot, I0, ds, rho, d = args
-#     if SOC_Voc > 1.0: # WON'T WORK IF Voc EVER DIPS BELOW 1.0 FOR A GIVEN BATTERY CHEMISTRY!
-#         Voc = SOC_Voc
-#     else:
-#         Voc = VocFunc(SOC_Voc)
-#         # SOC_Voc *= 100
-    
-#     def residualfunc(RPM, *args):
-#         RPMcalc = SimpleRPMeqsBase(RPM, *args)[0]
-#         res = RPMcalc - RPM
-#         return(res)
-    
-#     high = rpm_list[-1]
-#     low = rpm_list[0]
-#     RPM = bisectionBase(low, high, residualfunc, Vinf, Voc, dT, eta_c, *args)
-#     if RPM < 0.0:
-#         return(np.zeros(18))
-#     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase(RPM, Vinf, Voc, dT, eta_c, *args)
-#     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data) 
-#     Ic = Ib/nmot 
-#     Vc = Vb 
-#     Pout =  rho*((RPM/60)**3)*(d**5)*CP     # mechanical power out of ONE motor
-#     Pin_m = Vm*Im                           # electric power into one motor
-#     Pin_c = Vc*Ic                           # electric power into one controller
-#     eta_p = (CT*J)/CP
-#     eta_m = Pout/Pin_m 
-#     eta_c = Pin_m/Pin_c 
-#     eta_drive = eta_p*eta_m*eta_c
-#     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
-#     Q *= nmot
-    
-    
-#     return([T, Q, RPM, eta_drive, eta_p, eta_m, eta_c, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC_Voc])
-
-# #%%################## PLOTTING FUNCTIONS ##################
-
-# ################################# PointResult #################################
-# def PointResult(self, Vinf, SOC_Voc, dT, verbose = True):
-#     ''' 
-#     PointResult for fixed Vinf, SOC, dT
-    
-#     Does not accept runtime t yet, only SOC and Voc
-    
-#     Outputs
-#     --------------------------------
-#     array of: [T, Q, RPM, eta_drive, eta_p, eta_m, eta_c, eta_b, Pout, Pin_m, Pin_c, Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC_Voc]
-    
-#     TODO: allow PointResult to take in a runtime'''
-
-#     args = (self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
-#             self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
-#     propQs = SimplifiedRPMBase(Vinf, dT, SOC_Voc, *args)
-#     if verbose:
-#         if SOC_Voc > 1.0:
-#             print(f'\nAt Vinf = {Vinf/ftm:.4f} ft/s, Voc = {SOC_Voc:.4f} V, Throttle = {dT*100:.0f}%')
-#         else:
-#             print(f'\nAt Vinf = {Vinf/ftm:.4f} ft/s, SOC = {SOC_Voc*100:.0f}%, Throttle = {dT*100:.0f}%')
-#         for i, name in enumerate(propQnames):
-#             if name == 'Total Thrust (lbf)':
-#                 print(f'{name:30} = {propQs[i]/lbfN:.4f}')
-#             elif 'Efficiency' in name:
-#                 print(f'{name:30} = {propQs[i]*100:.4f}%')
-#             else:
-#                 print(f'{name:30} = {propQs[i]:.4f}')
-#     return(np.array(propQs))
-
-
-
-
-
-
-
-
-
-
-
-
-
-# ################################# LinePlots ####################################
-# # SOC, dT fixed with propQ vs Vinf
-# # SOC, velocity fixed with propQ vs dT
-# # dT, velocity fixed with propQ vs SOC
-# # TODO: replace Rint everywhere with Rb, same with Ibat to Ib, etc
-# @njit(fastmath = True)
-# def process_LinePlot_Vinf_SOC(Vs, SOC_Voc, dT, propQindx, *args):
-#     ''' To allow for numbification without needing to recompile every iteration '''
-#     outputs = []
-#     thrusts = []
-#     for Vinf in Vs:
-#         propQ = SimplifiedRPM(Vinf, dT, SOC_Voc, *args)
-#         outputs.append(propQ[propQindx])
-#         thrusts.append(propQ[0])
-#     return(outputs, thrusts)
-
-# @njit(fastmath = True)
-# def process_LinePlot_Vinf_t(Vs, t, dT, propQindx, *args):
-#     ''' Identical to above function but uses the constant current t approximation '''
-#     outputs = []
-#     thrusts = []
-#     for Vinf in Vs:
-#         propQ = SimplifiedRPM_t(Vinf, dT, t, *args)
-#         outputs.append(propQ[propQindx])
-#         thrusts.append(propQ[0])
-#     return(outputs, thrusts)
-        
-# def LinePlot_Vinf(self, SOC_Voc_t, dT, plot = True, n = 200, sigfigs = 4):
-#     '''
-#     Line plot of propQ vs Vinf at fixed SOC/Voc/t, dT
-    
-#     Needs to accomidate SOC, Voc, t inputs
-    
-#     (propQ = propulsion quantity, see SimplifiedRPM documentation for options) 
-#     '''
-    
-#     # checking that requested propQ exists
-#     propQs = ['thrust', 'torque', 'RPM', 'eta_drive', 'eta_p', 'eta_m', 'eta_c',  
-#               'Pout', 'Pin_m', 'Pin_c', 'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 'Voc', 'SOC']
-    
-#     try:
-#         interestindex = propQs.index(self.propQ)
-#         if self.SOCinput:
-#             print(f'\nPlotting {self.propQ} for SOC = {SOC_Voc_t*100:.0f}%, throttle = {dT*100:.0f}%')
-#         elif self.Vocinput:
-#             print(f'\nPlotting {self.propQ} for Voc = {SOC_Voc_t:.4f} V, throttle = {dT*100:.0f}%')
-#         elif self.tinput:
-#             print(f'\nPlotting {self.propQ} for t = {SOC_Voc_t:.1f} s, throttle = {dT*100:.0f}%')
-#     except:
-#         print('Quantity not available, please choose one of:\nthrust, torque, RPM, eta_p, eta_m, eta_c, eta_drive, Pout, Pin_m, Pin_c, Im, Ic, Ib, Voc, Vbat, Vm, Vc, SOC')
-#         return()
-    
-#     rpm_list = np.array(self.RPM_VALUES)
-
-#     #################################################################
-#     #### NEED A FUNCTION THAT GETS THE MAXIMUM VELOCITY FIRST #######
-#     Vs = np.linspace(0, 50, n)        # FOR NOW APPROXIMATE AS 50 M/S
-#     #################################################################
-    
-#     args = (rpm_list, self.COEF_NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
-#             self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
-    
-#     if self.tinput:
-#         outs, Ts = process_LinePlot_Vinf_t(Vs, SOC_Voc_t, dT, interestindex, *args)
-#         # if outs.count(0.0) > 3:
-#         #     raise ValueError('Warning: input runtime too long')
-#         # TODO: find a way to properly illustrate to ignorant users that where the plot goes to 0 is when SOC is less than max discharge
-#     else:
-#         outs, Ts = process_LinePlot_Vinf_SOC(Vs, SOC_Voc_t, dT, interestindex, *args)        
-
-#     propQs = np.array(outs)
-#     T = np.array(Ts)
-    
-#     if self.propQ == 'thrust': # convert to lbf if thrust is used 
-#         propQs /= lbfN
-
-#     # finding cruise velocity at the given SOC, dT
-#     D = 0.5*self.rho*self.CD*self.Sw*(Vs**2) # metric here
-#     cruise_idx = np.argmin(np.abs(T-D))
-#     cruise_D = D[cruise_idx]
-#     cruise_V = np.sqrt(cruise_D/(0.5*self.rho*self.CD*self.Sw)) # in m/s
-    
-#     # TODO: add max/min and cruise values to the plot
-#     print(f'Max {self.propQ} = {propQs.max():.{sigfigs}f} at Vinf = {Vs[np.argmax(propQs)]/ftm:.{sigfigs}f} ft/s')
-#     print(f'Min {self.propQ} = {propQs.min():.{sigfigs}f} at Vinf = {Vs[np.argmin(propQs)]/ftm:.{sigfigs}f} ft/s')
-#     print(f'at cruise Vinf = {cruise_V/ftm:.{sigfigs}f} ft/s, {self.propQ} = {propQs[cruise_idx]:.{sigfigs}f}')
-    
-#     if plot:
-#         fig, ax = plt.subplots(figsize = (6, 4), dpi = 1000)
-                
-#         ax.plot(Vs/ftm, propQs) 
-#         ax.plot([cruise_V/ftm, cruise_V/ftm], ax.get_ylim(), '--', color = 'red', label = 'Cruise Velocity')
-#         ax.grid()
-#         ax.minorticks_on()
-#         plt.legend()
-#         plt.ylabel(f'{propQnames[interestindex]}') # need to add a way to get units in correctly
-#         plt.xlabel('Velocity (ft/s)')
-        
-#         # TODO: find a better way to say motor(s) depending on nmot
-#         if self.nmot > 1:
-#             s = 's'
-#         else:
-#             s = ''
-            
-#         if self.SOCinput:
-#             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t*100:.0f}% SOC and {dT*100:.0f}% throttle')
-#         elif self.Vocinput:
-#             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.4f} V Voc and {dT*100:.0f}% throttle')
-#         else:
-#             plt.title(f'{self.nmot:.0f} {self.motor_manufacturer} {self.motor_name} motor{s}; {self.ns:.0f}S {self.CB:.0f} mAh battery; {self.nmot:.0f} APC {self.prop_name} propeller{s}\n{propQnames[interestindex]} at {SOC_Voc_t:.1f} s runtime and {dT*100:.0f}% throttle')
-#         plt.show()
-    
-#     return(outs, cruise_V)
-
+    # output array = (n, n, 23) where (:, 0, 0) corresponds to y and (0, :, :) corresponds to x
+    # return xarr, yarr, output
+    return(x_array, y_array, output_array)
