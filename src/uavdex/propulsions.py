@@ -973,7 +973,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
     eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb)) 
-    # TODO ensure battery efficiency varies with runtime: 
+    # Check battery efficiency varies with runtime: 
     # https://ntrs.nasa.gov/api/citations/20205004497/downloads/Battery_Evaluation_EATS_07_15_20.pdf
     eta_drive = eta_p*eta_g*eta_m*eta_c*eta_b # took out divided by nmot, REVIEW later
     
@@ -1115,8 +1115,6 @@ def LinePlotFunc(self, propQ = 'T',
         Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         
         and rows corresponding to a range of the nonconstant value
-        
-    TODO: numbafy
     '''
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
@@ -1167,7 +1165,10 @@ def LinePlotFunc(self, propQ = 'T',
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input = copy.deepcopy(clean_inputs)
             inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args) # TODO: fix this terrible SOC flag
+            PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            # todo, add speedup based on when the data starts and ends 
+            # (assume it has no discontinuities in between!)
+
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
             #     endidx = i 
             #     break
@@ -1178,19 +1179,20 @@ def LinePlotFunc(self, propQ = 'T',
         inner_input = copy.deepcopy(clean_inputs)
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPMBase_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args) # TODO: fix this terrible SOC flag
+            PropQs[i, :] = SimplifiedRPMBase_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            # todo, add speedup based on when the data starts and ends 
+            # (assume it has no discontinuities in between!)
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
             #     endidx = i 
             #     break
-            if PropQs[i, -1] <= 0.1: # minimum SOC = 10% for batteries
-                endidx = i
-                break
+            # if PropQs[i, -1] <= 0.1: # minimum SOC = 10% for batteries
+            #     endidx = i
+            #     break
         endidx = clean_inputs[idxarr].size
     inputarr = inputarr[:endidx]
     PropQs = PropQs[:endidx, :]
     
     if plot:
-        # todo finish the plotting
         # primary goal: plot the inputarray on the x-axis versus a selected propQ on the yaxis
         # secondary goal: if some aircraft characteristics (Cd, Sw) have been provided, plot the T = D over the selected propQ
         # anything else? Do I want to have an option of plotting a contour where propQ is yaxis, and another var (such as dT corresponds to different contour lines?)
@@ -1200,6 +1202,12 @@ def LinePlotFunc(self, propQ = 'T',
         # do I plot them directly and let people alter their inputs?
         # would prefer to get the code to determine the bounds automatically and raise errors
         #   if the range is extremely limited
+        
+        # TODO: add in Ilimit, Plimit (from motor/battery/ESC database)
+        # TODO: add in T = D
+        # TODO: limit plot (or data gathering range automatically 
+        # so ppl don't have to input values 
+        # they just specify which variable they want to be the array (simple)
         
         propqidx = propQshort.index(propQ)
 
@@ -1226,6 +1234,284 @@ def LinePlotFunc(self, propQ = 'T',
 
 
 #%% ContourPlot
+# @njit(fastmath = True)
+# def process_2D_data_Voc():
+    
+#     return()
+
+# @njit(fastmath = True)
+# def process_2D_data_t():
+    
+#     return()
+
+# can plot any two of Uinf, dT, h/rho, t/Voc/SOC
+def ContourPlotFunc(self, propQ = 'T',
+                    xaxis = 'Uinf',
+                    yaxis = 't',
+                    Uinf = None, dT = None, 
+                    rho = None, h = None, 
+                    SOC = None, Voc = None, t = None, 
+                    verbose = True, plot = False):
+    '''
+    Input
+    ----------------------------------------------------------------------------------------------------------
+        a propulsion quantity (propQ) of interest (options given by the output array)
+        
+        constant values for two of: Uinf, dT, rho/h, SOC/Voc/t
+        a range of the other two values!
+        
+    IMPORTANT: 
+        bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
+
+    Output
+    ----------------------------------------------------------------------------------------------------------
+        3D np array (0, 0, :) corresponding to 
+        
+        0  1   2       3        4      5      6      7       8    
+        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+        
+         9      10     11    12    13    14   15  16  17  18  19  20   21   22
+        Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+        
+        (0, :, 0) corresponding to the x axis input
+        (:, 0, 0) corresponding to the y axis input
+        
+    TODO: numbafy
+    '''
+    
+    args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
+            self.ns, self.np, self.CB, self.Rb, self.BattType, 
+            self.KV, self.Rm, self.I0, self.nmot)
+    
+    if not exactly_one_defined(t, SOC, Voc):
+        raise ValueError("Exactly one of t, SOC, or Voc must be provided")
+        
+    if not exactly_one_defined(rho, h):
+        raise ValueError("Exactly one of h or rho must be provided")
+    
+    # Find the np array and the constants to use
+    full_inputs = [Uinf, dT, rho, h, SOC, Voc, t]
+    full_input_names = ['Velocity (m/s)', 'Throttle (0-1)', 
+                        'Density (kg/m\u00B3)', 'Altitude (m)', 
+                        'State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)']
+    arrs = 0
+    idxarrs = []
+    inputarrs = []
+    for i, specinput in enumerate(full_inputs):
+        if isinstance(specinput, np.ndarray):
+            arrs += 1
+            idxarrs.append(i)
+            inputarrs.append(specinput)
+    if arrs != 2:
+        raise KeyError("Exactly two arrays of inputs must be provided")
+    
+    input_names = [full_input_names[idxarrs[0]], full_input_names[idxarrs[1]]]
+    
+    # convert h to density
+    if h is not None:
+        rho = atm().rho(h)
+        
+    # convert SOC to Voc
+    if SOC is not None:
+        Voc = VocFuncBase(SOC, self.BattType)
+    
+    # collapsing indexes
+    for i, idxarr in enumerate(idxarrs):
+        if idxarr == 3:
+            idxarrs[i] = 2 
+        elif idxarr == 4 or idxarr == 5 or idxarr == 6:
+            idxarrs[i] = 3 
+
+    # TODO
+    # TODO
+    # TODO
+    # TODO
+    # TODO
+    # must find some way to define one array as the "outer" loop and another as the inner loop
+    # outer corresponds to yaxis variable
+    # need to use yaxis definition to determine which is used for the plotting
+    
+    if t is None:
+        clean_inputs = [Uinf, dT, rho, Voc] # if Voc is arr, SOC is arr and vice versa
+        PropQs = np.zeros((clean_inputs[idxarr].size, 23))
+        for i, value in enumerate(clean_inputs[idxarr]):
+            inner_input = copy.deepcopy(clean_inputs)
+            inner_input[idxarr] = value
+            PropQs[i, :] = SimplifiedRPM_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            
+            # todo, add speedup based on when the data starts and ends 
+            # (assume it has no discontinuities in between!)
+            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
+            #     endidx = i 
+            #     break
+        endidx = clean_inputs[idxarr].size
+    else:
+        clean_inputs = [Uinf, dT, rho, t]
+        PropQs = np.zeros((clean_inputs[idxarr].size, 23))
+        inner_input = copy.deepcopy(clean_inputs)
+        for i, value in enumerate(clean_inputs[idxarr]):
+            inner_input[idxarr] = value
+            PropQs[i, :] = SimplifiedRPM_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            
+            # todo, add speedup based on when the data starts and ends 
+            # (assume it has no discontinuities in between!)
+            # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
+            #     endidx = i 
+            #     break
+        
+            # if PropQs[i, -1] <= 0.1: # minimum SOC = 10% for batteries
+            #     endidx = i
+            #     break
+        endidx = clean_inputs[idxarr].size
+    inputarrs = inputarrs[:, :endidx]
+    PropQs = PropQs[:endidx, :]
+    
+    
+#%% OLD CONTOURPLOT FUNCTIONS
+
+# @njit(fastmath = True)
+# def ModelCalcsNumbaV4(velocity, t, throttle, *args):
+#     '''
+#     old RPM formulation adjusted for throttle with a fixed ESC eff correction!
+#     '''
+#     fPWM = 12e3     # Hz (1/s)
+#     Tsd = 200e-9    # s
+#     Rds = 1e-3      # Ohm
+#     Psb = 0.5       # W
+    
+#     # ASSUME ESC EFF = 0.9 here
+#     eta_c = 0.9
+    
+#     rpm_list, coef_numba_prop_data, CB, ns, Rint, KV, Rm, nmot, I0, ds, rho, d = args
+    
+#     def residualfunc(RPM, *args):
+#         velocity, t, dT, eta_c, fPWM, Tsd, Rds, Psb, rpm_list, coef_numba_prop_data, CB, ns, Rint, KV, Rm, nmot, I0, ds, rho, d = args
+        
+#         J = velocity/((RPM/60)*d) # advance ratio J = velocity/nD where n is rev/s and D is propeller diameter in m (velocity in m/s ofc)
+#         CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
+#         Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
+#         Im = Q*KV*(np.pi/30) + I0 # for one motor
+#         Ib = (nmot/eta_c)*Im
+#         SOC = 1.0 - (Ib*t)/(CB*3.6)
+#         Voc = 3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3
+#         Vb = ns*(Voc) - Ib*Rint
+#         Vm = dT*Vb
+#         RPMcalc = KV*(Vm - Im*Rm)
+#         res = RPMcalc - RPM
+            
+#         return(res)
+
+#     # Vbattinit = throttle*3.6*ns
+#     high = rpm_list[-1]
+#     low = rpm_list[0]
+#     RPM = bisection(low, high, residualfunc, velocity, t, throttle, eta_c, fPWM, Tsd, Rds, Psb, *args)
+    
+#     J = velocity/((RPM/60)*d) # advance ratio J = velocity/nD where n is rev/s and D is propeller diameter in m (velocity in m/s ofc)
+#     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
+#     Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
+#     Im = Q*KV*(np.pi/30) + I0 # for one motor
+#     Ib = (nmot/eta_c)*Im
+#     SOC = 1.0 - (Ib*t)/(CB*3.6)
+#     Voc = 3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3
+#     Vb = ns*(Voc) - Ib*Rint
+#     Vm = throttle*Vb
+#     Pin_m = Vm*Im 
+    
+    
+#     T = nmot*rho*((RPM/60)**2)*(d**4)*CTNumba(RPM, J, rpm_list, coef_numba_prop_data)
+    
+#     if SOC < (1 - ds) or Ib < 0 or T <= 0:
+#         return 0.0, 0.0, 0.0, 0.0
+#     return T, Pin_m, Ib, RPM
+
+# def GetPointDesignDataV3(self, m, throttle = None):
+#     '''Now updates Vinf and t to get better axes'''    
+    
+#     print('\nFinding maximum velocities (please wait ~10s)')
+    
+#     start = time.perf_counter()
+#     VmaxTDend, t_Vmax = GekkoVmaxForData(self, self.ds, Tlimit=True)
+#     VmaxReal = VmaxLean(self, 0.0, Tlimit=True)
+#     Vmax = self.PROP_DATA[self.RPM_VALUES[-1]]['V'].max()
+    
+#     Vnew = np.linspace(0.0, VmaxReal + 20*ftm, m)
+#     tmin, V_tmin = getGekkoRuntimeMin(self, Vmax) # I'm not understanding how this tmin is accurate but the Vmax isn't???
+#     tnew = np.linspace(0.0, t_Vmax + 30, m)
+#     end = time.perf_counter()
+#     print(f'Maximum velocity = {VmaxReal/ftm:.2f} fps at runtime = 0.0s')
+#     print(f'Minimum runtime = {tmin:.2f}s at velocity = {V_tmin/ftm:.2f} fps')
+#     print(f'Maximum runtime = {t_Vmax:.2f}s at velocity = {VmaxTDend/ftm:.2f} fps')
+#     print(f'Time Taken: {end-start:.2f}s\n')
+
+#     print('Starting data collection')
+#     rpm_list = np.array(self.RPM_VALUES)
+    
+#     # rpm_list = np.array(self.RPM_VALUES)
+
+#     # VmaxTDend, t_Vmax = GekkoVmaxForData(self, self.ds, Tlimit=True)
+#     # VmaxReal = VmaxLean(self, 0.0, Tlimit=True)
+#     # Vmax = self.PROP_DATA[self.RPM_VALUES[-1]]['V'].max()
+    
+#     # Vnew = np.linspace(0.0, VmaxReal + 20*ftm, m)
+#     # tmin, V_tmin = getGekkoRuntimeMin(self, Vmax) # I'm not understanding how this tmin is accurate but the Vmax isn't???
+#     # end = time.perf_counter()
+    
+#     # # t_Vmax correction based on throttle 
+#     # ##### VERY INEFICIENT, MAKE A NUMBA FUNCTION BASED THAT FINDS T AT THE EFFECTIVE V_MAX #####
+#     # # if throttle < 1.0:
+#     # #     t_Vmax = MaxRuntimeNumba(VmaxTDend, throttle, rpm_list, self.COEF_NUMBA_PROP_DATA, 
+#     # #                     self.CB, self.ns, self.Rb, self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
+    
+#     # tnew = np.linspace(0.0, t_Vmax + 30*(3/throttle), m) # change back to + 30 when you get the scaling right
+
+#     # print(f'Maximum velocity = {VmaxReal/ftm:.2f} fps at runtime = 0.0s')
+#     # # print(f'Minimum runtime = {tmin:.2f}s at velocity = {V_tmin/ftm:.2f} fps')
+#     # print(f'Maximum runtime = {t_Vmax:.2f}s at velocity = {VmaxTDend/ftm:.2f} fps')
+#     # print(f'Time Taken: {end-start:.2f}s\n')
+
+#     # print('Starting data collection')
+
+#     T = np.zeros((m, m))
+#     Itot = np.zeros((m, m))
+#     P = np.zeros((m, m))
+#     value4 = np.zeros((m, m))
+    
+#     if throttle == None:
+#         throttle = self.throttle
+#     else:
+#         throttle = throttle
+    
+#     for i, velocity in enumerate(tqdm(Vnew)):
+#         if velocity > VmaxReal + 30*ftm:
+#             break
+#         else:
+#             for j, tspec in enumerate(tnew):
+#                 # NOT RETURNING CORRECT VALUES FOR SOME CASES!!!
+#                 Tspec, Pspec, Itotspec, value4spec = ModelCalcsNumbaV4(velocity, tspec, throttle, rpm_list, 
+#                                                                       self.COEF_NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
+#                                                                       self.KV, self.Rm, self.nmot, self.I0, self.ds, self.rho, self.propdiam)
+#                 # if Tspec == 0:
+#                 #     # switch to slower but more reliable Scipy formulation
+#                 #     Tspec, Pspec, Itotspec, RPMspec = ModelCalcs(self, velocity, tspec)
+                
+#                 if Tspec == 0:
+#                     if tspec > tmin:
+#                         break
+#                     else:
+#                         continue
+#                 else:
+#                     T[i, j] = Tspec
+#                     P[i, j] = Pspec
+#                     Itot[i, j] = Itotspec
+#                     value4[i, j] = value4spec
+#     Vnew = Vnew/ftm
+#     T = T/lbfN
+    
+#     self.PointDesignData = [Vnew, tnew, T, P, Itot, value4]
+#     return(Vnew, tnew, T, P, Itot, value4)
+
+
+#%%
 
     # cases:
     # Uinf arr, dT, rho, Voc

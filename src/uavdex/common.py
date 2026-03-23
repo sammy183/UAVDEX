@@ -275,7 +275,7 @@ class PointDesign:
                 return
             arr = np.asarray(val)
             if not np.all(cond(arr)):
-                raise ValueError(f"{name} out of bounds: {val}")
+                raise ValueError(f"{name} out of bounds (see func docstring)")
         check(dT,  lambda x: (x > 0) & (x <= 1), "dT")
         check(rho, lambda x: x >= 0, "rho")
         check(h,   lambda x: x >= 0, "h")
@@ -287,6 +287,31 @@ class PointDesign:
                             rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
                             verbose = verbose, plot = plot))
         
+    def ContourPlot(self, propQ = 'T',
+                    xaxis = 'Uinf',
+                    yaxis = 't',
+                    Uinf = None, dT = None, 
+                    rho = None, h = None, 
+                    SOC = None, Voc = None, t = None, 
+                    verbose = True, plot = False):
+        def check(val, cond, name):
+            if val is None:
+                return
+            arr = np.asarray(val)
+            if not np.all(cond(arr)):
+                raise ValueError(f"{name} out of bounds: {val}")
+        check(dT,  lambda x: (x > 0) & (x <= 1), "dT")
+        check(rho, lambda x: x >= 0, "rho")
+        check(h,   lambda x: x >= 0, "h")
+        check(SOC, lambda x: (x >= 0) & (x <= 1), "SOC")
+        check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
+        check(t,   lambda x: x >= 0, "t") 
+        
+        return(ContourPlotFunc(self, propQ = propQ, xaxis = xaxis, yaxis=yaxis, 
+                               Uinf = Uinf, dT = dT, 
+                               rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
+                               verbose = verbose, plot = plot))
+    
     # def PointResult(self, Vinf, dT, t, rho = self.rho):
         
     

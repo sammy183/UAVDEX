@@ -71,7 +71,7 @@ class TestPointResult(unittest.TestCase):
                 for j, value in enumerate(data):
                     self.assertEqual(precomputed_results[i][j], round(value, 6), f"PointResult case {i}, value {j} does not match precomputed")
                     total_tested += 1
-        print(f"Tested {total_tested} PointResult values")
+        # print(f"Tested {total_tested} PointResult values")
         
 class TestLinePlot(unittest.TestCase):
     def setUp(self):
@@ -107,7 +107,26 @@ class TestLinePlot(unittest.TestCase):
                     verbose=False,
                     **case
                 )
-
+                
+# class TestContourPlot(unittest.TestCase):
+#     def setUp(self):
+#         self.design = PointDesign()
+#         self.design.Motor('C-4130/20', nmot = 2)
+#         self.design.Battery('Gaoneng_8S_3300')
+#         self.design.Prop('16x10E')
+#         # self.design.Motor('V8110-170', nmot = 1)
+#         # self.design.Battery('Gaoneng_8S_3300')
+#         # self.design.Prop('22x12E')
+    
+#     def test_contourplot_varients(self):
+#         cases = []
+#         for i, case in enumerate(cases):
+#             with self.subTest(case=case):
+#                 self.design.ContourPlot(
+#                     verbose=False,
+#                     **case
+#                 )
+        
 
 if __name__ == '__main__':
     unittest.main()
