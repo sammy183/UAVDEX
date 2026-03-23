@@ -973,6 +973,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
     eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb)) 
+    # TODO: FIX THE BATTERY EFFICIENCY BY ACCOUNTING FOR RB VARYING WITH SOC (CRITICAL)
     # Check battery efficiency varies with runtime: 
     # https://ntrs.nasa.gov/api/citations/20205004497/downloads/Battery_Evaluation_EATS_07_15_20.pdf
     eta_drive = eta_p*eta_g*eta_m*eta_c*eta_b # took out divided by nmot, REVIEW later
@@ -1185,9 +1186,9 @@ def LinePlotFunc(self, propQ = 'T',
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
             #     endidx = i 
             #     break
-            # if PropQs[i, -1] <= 0.1: # minimum SOC = 10% for batteries
-            #     endidx = i
-            #     break
+            if PropQs[i, -1] <= 1-self.ds: # minimum SOC = 10% for batteries
+                endidx = i
+                PropQs[i, :] = np.array([0.0]*23)
         endidx = clean_inputs[idxarr].size
     inputarr = inputarr[:endidx]
     PropQs = PropQs[:endidx, :]
