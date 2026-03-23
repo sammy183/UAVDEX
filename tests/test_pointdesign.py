@@ -27,11 +27,12 @@ class TestComponentInits(unittest.TestCase):
         self.design.ViewSetup()
         
 
-#### BUILD OUT TO CHECK IF IT COULD OPEN DATABSE SHEETS WITHOUT ACTUALLY OPENING THE FILES
+# #### BUILD OUT TO CHECK IF IT COULD OPEN DATABSE SHEETS WITHOUT ACTUALLY OPENING THE FILES
 # class TestDatabaseAccess(unittest.TestCase):
 #     def test_motor_sheet(self):
 #         t = PointDesign()
-#         t.OpenMotorData()
+#         # t.OpenMotorData()
+#         # t.OpenBatteryData()
         
 class TestPointResult(unittest.TestCase):
     def setUp(self):
