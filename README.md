@@ -12,8 +12,6 @@ by Sammy Nassau, RPI 2025
 #### DesignStudy
 #### ClassicalSizing
 
-Note to self: when uploading, change version number in UAVDEX/src/uavdex/_ _ init _ _.py
-
 # Propulsion Models  
 
 [1]: https://rincon-mora.gatech.edu/publicat/jrnls/tec05_batt_mdl.pdf
