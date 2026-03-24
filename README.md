@@ -9,9 +9,9 @@ Anaconda is recommended. In anaconda prompt with the desired env activated, simp
 pip install uavdex
 ```
 ## PointDesign
-This object allows for calculation of electric aircraft propulsion with specified components across the entire flight envelope.
+This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
-Key inputs: 
+Key inputs:
 * Uinf:    freestream velocity over the propeller ($U_{\infty}$)
 * h:       altitude ($h$)
 * dT:      throttle setting ($\delta T$)
@@ -21,7 +21,7 @@ Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be inp
 
 Battery SOC (input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
-Example of component initialization:
+*Component initialization example*
 ```
 import uavdex as ud
 
@@ -42,7 +42,7 @@ All values needed are typically available online, meaning users can add whatever
 ### PointResult
 The simplist function to get propulsion quantities (called 'propQ' in the code).
 
-To run:
+*PointResult example*
 ```
 import uavdex as ud
 
@@ -101,7 +101,7 @@ propQ = ['T', 'eta_drive', 'Ib']
 ```
 to plot multiple propQs for the same sweep.
 
-To run:
+*LinePlot example*
 ```
 import uavdex as ud
 import numpy as np
@@ -147,6 +147,8 @@ Alternatively, Uinf can be set to a specific value and sweeps of another quantit
 
 ### ContourPlot
 For sweeps of two variables, use a contour plot!
+
+*ContourPlot example*
 ```
 import uavdex as ud
 import numpy as np
