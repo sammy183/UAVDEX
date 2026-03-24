@@ -9,7 +9,7 @@ Anaconda is recommended. In anaconda prompt with the desired env activated, simp
 pip install uavdex
 ```
 ## PointDesign
-This object allows for determination of electric aircraft propulsion with specified components across the entire flight envelope.
+This object allows for calculation of electric aircraft propulsion with specified components across the entire flight envelope.
 
 The 4 key inputs are freestream velocity over the propeller ($U_{\infty}$), altitude ($h$), throttle setting ($\delta T$), and battery state of charge (SOC).
 
