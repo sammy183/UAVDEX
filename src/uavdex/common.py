@@ -225,12 +225,12 @@ class PointDesign:
                 return
             if not cond(val):
                 raise ValueError(f"{name} out of bounds: {val}")
-        check(dT,  lambda x: (x > 0) & (x <= 1), "dT")
-        check(rho, lambda x: x >= 0, "rho")
-        check(h,   lambda x: x >= 0, "h")
-        check(SOC, lambda x: (x >= 0) & (x <= 1), "SOC")
+        check(dT,  lambda x: (x >= 0.0) & (x <= 1), "dT")
+        check(rho, lambda x: x >= 0.0, "rho")
+        check(h,   lambda x: x >= 0.0, "h")
+        check(SOC, lambda x: (x >= 0.0) & (x <= 1), "SOC")
         check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
-        check(t,   lambda x: x >= 0, "t") 
+        check(t,   lambda x: x >= 0.0, "t") 
             
         return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, 
                                SOC = SOC, Voc = Voc, t = t, 
@@ -276,12 +276,12 @@ class PointDesign:
             arr = np.asarray(val)
             if not np.all(cond(arr)):
                 raise ValueError(f"{name} out of bounds (see func docstring)")
-        check(dT,  lambda x: (x > 0) & (x <= 1), "dT")
-        check(rho, lambda x: x >= 0, "rho")
-        check(h,   lambda x: x >= 0, "h")
-        check(SOC, lambda x: (x >= 0) & (x <= 1), "SOC")
+        check(dT,  lambda x: (x >= 0.0) & (x <= 1), "dT")
+        check(rho, lambda x: x >= 0.0, "rho")
+        check(h,   lambda x: x >= 0.0, "h")
+        check(SOC, lambda x: (x >= 0.0) & (x <= 1), "SOC")
         check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
-        check(t,   lambda x: x >= 0, "t") 
+        check(t,   lambda x: x >= 0.0, "t") 
                 
         return(LinePlotFunc(self, propQ = propQ, Uinf = Uinf, dT = dT, 
                             rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
@@ -309,7 +309,7 @@ class PointDesign:
 
             
         IMPORTANT: 
-            bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
+            bounds on ranges: dT in (0.2, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
             input arrays MUST have the same size (square input)
 
         Output
