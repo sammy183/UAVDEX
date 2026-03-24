@@ -1377,14 +1377,14 @@ def ContourPlotFunc(self, propQ = 'T',
         # TODO: limit plot (or data gathering range automatically 
         # so ppl don't have to input values 
         # they just specify which variable they want to be the array (simple)
-
-        fig, ax = plt.subplots(figsize = (6, 4))
         if isinstance(propQ, list):
             pass
         else:
             propQ = [propQ]
     
         for propQspec in propQ:
+            fig, ax = plt.subplots()
+
             propqidx = propQshort.index(propQspec)
             propQ_spec = output_array[:, :, propqidx]
             
