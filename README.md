@@ -97,7 +97,7 @@ or
 ```
 propQ = ['T', 'eta_drive', 'Ib']
 ```
-if you want plot multiple propQs for the same sweep.
+to plot multiple propQs for the same sweep.
 
 To run:
 ```
@@ -110,13 +110,36 @@ design.Motor('C-4130/20', nmot = 2)		# add a motor, and specify the # of motors
 design.Battery('Gaoneng_8S_3300') 		# add a battery 
 design.Prop('16x10E') 					# add a propeller
 
-# PointResult
-# Uinf:	velocity in m/s
-# dT: 	throttle (0-1)
-# h: 	altitude in m 
-# t: 	runtime in s
-design.LinePlot(propQ =  ['T','eta_drive','Ib'], Uinf = np.linspace(0, 50), dT = 1.0, h = 100, t = 30)
+# LinePlot usage
+design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf = np.linspace(0, 50), dT = 1.0, h = 100, t = 30)
 ```
+<!--
+<a href="https://github.com/peterdsharpe/AeroSandbox/blob/master/tutorial/06%20-%20Aerodynamics/01%20-%20AeroSandbox%203D%20Aerodynamics%20Tools/01%20-%20Vortex%20Lattice%20Method/01%20-%20Vortex%20Lattice%20Method.ipynb">VLM simulation of a glider, aileron deflections of +-30°</a>
+-->
+which outputs the following three plots
+<table>
+	<tr>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a></a>
+			</p>
+			<img src="./media/images/vlm3_with_control_surfaces.png" alt="VLM simulation">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a></a>
+			</p>
+			<img src="./media/images/wing_optimization.png" alt="Wing optimization">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a></a>
+			</p>
+			<img src="./media/images/airfoil_optimization.png" alt="Airfoil optimization">
+		</td>
+	</tr>
+</table>
+
 np.linspace simply samples 50 points by default between the start and ending values. To sample 200 points and get a smoother curve, use 
 ```
 Uinf = np.linspace(0, 50, 200)
@@ -125,6 +148,24 @@ Alternatively, Uinf can be set to a specific value and sweeps of another quantit
 
 
 ### ContourPlot
+For automation of sweeps of two variables, use a contour plot!
+```
+import uavdex as ud
+import numpy as np
+
+# Component Initialization
+design = ud.PointDesign() 				# initialize PointDesign object
+design.Motor('C-4130/20', nmot = 2)		# add a motor, and specify the # of motors
+design.Battery('Gaoneng_8S_3300') 		# add a battery 
+design.Prop('16x10E') 					# add a propeller
+
+# ContourPlot
+design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
+                   Uinf = np.linspace(0, 80, n), 
+                   t = np.linspace(0, 300, n),
+                   dT = 1.0, 
+                   h = 100)
+```
 
 <!--
 add image (code copied from aerosandbox)
