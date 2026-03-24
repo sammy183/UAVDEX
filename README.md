@@ -188,19 +188,19 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 	<tr>
 		<td width="33%" valign="top">
 			<p align="center">
-				<a>Efficiency as a function of velocity and throttle</a>
+				<a>Efficiency for velocity vs throttle</a>
 			</p>
 			<img src="./Examples/LinePlot_V_T.png" alt="Thrust">
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
-				<a>Efficiency as a function of velocity and cell voltage</a>
+				<a>Efficiency for velocity vs cell voltage</a>
 			</p>
       <img src="./Examples/ContourPlot_V_Voc_eta.png">
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
-				<a>Efficiency as a function of cell voltage and throttle</a>
+				<a>Efficiency for cell voltage vs throttle</a>
 			</p>
 			<img src="./Examples/ContourPlot_Voc_dT_eta.png">
 		</td>
