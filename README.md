@@ -2,7 +2,7 @@
 ## IN PROGRESS: April 2026 is the target for public release
 
 ## Installation
-Anaconda is recommended. In the desired environment, simply run:
+Anaconda is recommended. In anaconda prompt with the desired env activated, simply run:
 ```
 pip install uavdex
 ```
