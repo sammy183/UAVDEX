@@ -1045,16 +1045,16 @@ def PointResultFunc(self, Uinf = None, dT = None,
         
     if verbose:
         if t is not None:
-            print(f'\nAt Uinf = {Uinf/ftm:.2f} ft/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m3, Runtime = {t:.1f} s')
+            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Runtime = {t:.1f} s')
         elif SOC is not None and SOC > 0.0:
-            print(f'\nAt Uinf = {Uinf/ftm:.2f} ft/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m3, SOC = {SOC*100:.0f}%')
+            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, SOC = {SOC*100:.0f}%')
         elif Voc is not None:
-            print(f'\nAt Uinf = {Uinf/ftm:.2f} ft/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m3, Voc = {Voc:.2f} V')
+            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Voc = {Voc:.2f} V')
 
         for i, name in enumerate(propQnames):
-            if name == 'Total Thrust (lbf)':
-                print(f'{name:30} = {propQs[i]/lbfN:.3f}')
-            elif 'Efficiency' in name:
+            # if name == 'Total Thrust (lbf)':
+            #     print(f'{name:30} = {propQs[i]/lbfN:.3f}')
+            if 'Efficiency' in name:
                 print(f'{name:30} = {propQs[i]*100:.2f}%')
             elif 'State of Charge' in name:
                 print(f'{name:30} = {propQs[i]*100:.2f}%')
@@ -1205,26 +1205,31 @@ def LinePlotFunc(self, propQ = 'T',
         # TODO: limit plot (or data gathering range automatically 
         # so ppl don't have to input values 
         # they just specify which variable they want to be the array (simple)
-        
-        propqidx = propQshort.index(propQ)
-
-        fig, ax = plt.subplots(figsize = (6, 4))
-        ax.plot(inputarr, PropQs[:, propqidx], color = 'k')
-        plt.xlabel(input_name)
-        plt.ylabel(propQnames[propqidx])
-        
-        # get short names of inputs along with title string
-        input_names = ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
-        parts = []
-        for name, val in zip(input_names, full_inputs):
-            if val is None:
-                continue
-            if isinstance(val, np.ndarray):
-                continue  # skip arrays
-            parts.append(f"{name} = {val}")
-        title_str = ", ".join(parts)
-        plt.title(f'{input_name} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
-        plt.show()
+        if isinstance(propQ, list):
+            pass
+        else:
+            propQ = [propQ]
+    
+        for propQspec in propQ:
+            propqidx = propQshort.index(propQspec)
+    
+            fig, ax = plt.subplots(figsize = (6, 4))
+            ax.plot(inputarr, PropQs[:, propqidx], color = 'k')
+            plt.xlabel(input_name)
+            plt.ylabel(propQnames[propqidx])
+            
+            # get short names of inputs along with title string
+            input_names = ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
+            parts = []
+            for name, val in zip(input_names, full_inputs):
+                if val is None:
+                    continue
+                if isinstance(val, np.ndarray):
+                    continue  # skip arrays
+                parts.append(f"{name} = {val}")
+            title_str = ", ".join(parts)
+            plt.title(f'{input_name} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+            plt.show()
 
     
     return(PropQs, inputarr)
@@ -1372,43 +1377,48 @@ def ContourPlotFunc(self, propQ = 'T',
         # they just specify which variable they want to be the array (simple)
 
         fig, ax = plt.subplots(figsize = (6, 4))
-        
-        propqidx = propQshort.index(propQ)
-        propQ_spec = output_array[:, :, propqidx]
-        
-        X, Y = np.meshgrid(x_array, y_array)
-        propQ_spec_alt = propQ_spec[propQ_spec > 0]    # very good for removing all the violation keys, and finding the max, but flattens the array
-        lower = propQ_spec_alt.min()                    # finds the minimum Score discounting violation trips
-        upper = propQ_spec.max()
-        img = ax.contourf(X, Y, propQ_spec, cmap = colormap, levels = np.linspace(lower, upper, grade))
-        fig.colorbar(img, ticks = np.linspace(lower, upper, 11), pad = 0.025, shrink = 1.0, spacing = 'uniform', label=f'{propQnames[propqidx]}')
+        if isinstance(propQ, list):
+            pass
+        else:
+            propQ = [propQ]
     
-        # to get correct names: xaxis, yaxis --> input names idx --> full_input_names idx --> full_input_names value
-        full_input_names = ['State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)', 
-                            'Velocity (m/s)', 'Throttle (0-1)', 
-                            'Density (kg/m\u00B3)', 'Altitude (m)']
-        xname_idx = 0
-        yname_idx = 0
-        for i, name in enumerate(input_names):
-            if name == xaxis:
-                xname_idx = i
-            elif name == yaxis:
-                yname_idx = i
+        for propQspec in propQ:
+            propqidx = propQshort.index(propQspec)
+            propQ_spec = output_array[:, :, propqidx]
+            
+            X, Y = np.meshgrid(x_array, y_array)
+            propQ_spec_alt = propQ_spec[propQ_spec > 0]    # very good for removing all the violation keys, and finding the max, but flattens the array
+            lower = propQ_spec_alt.min()                    # finds the minimum Score discounting violation trips
+            upper = propQ_spec.max()
+            img = ax.contourf(X, Y, propQ_spec, cmap = colormap, levels = np.linspace(lower, upper, grade))
+            fig.colorbar(img, ticks = np.linspace(lower, upper, 11), pad = 0.025, shrink = 1.0, spacing = 'uniform', label=f'{propQnames[propqidx]}')
         
-        plt.xlabel(full_input_names[xname_idx])
-        plt.ylabel(full_input_names[yname_idx])
-        
-        # get short names of inputs along with title string
-        parts = []
-        for name, val in zip(input_names, full_inputs):
-            if val is None:
-                continue
-            if isinstance(val, np.ndarray):
-                continue  # skip arrays
-            parts.append(f"{name} = {val}")
-        title_str = ", ".join(parts)
-        plt.title(f'{xaxis}, {yaxis} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
-        plt.show()
+            # to get correct names: xaxis, yaxis --> input names idx --> full_input_names idx --> full_input_names value
+            full_input_names = ['State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)', 
+                                'Velocity (m/s)', 'Throttle (0-1)', 
+                                'Density (kg/m\u00B3)', 'Altitude (m)']
+            xname_idx = 0
+            yname_idx = 0
+            for i, name in enumerate(input_names):
+                if name == xaxis:
+                    xname_idx = i
+                elif name == yaxis:
+                    yname_idx = i
+            
+            plt.xlabel(full_input_names[xname_idx])
+            plt.ylabel(full_input_names[yname_idx])
+            
+            # get short names of inputs along with title string
+            parts = []
+            for name, val in zip(input_names, full_inputs):
+                if val is None:
+                    continue
+                if isinstance(val, np.ndarray):
+                    continue  # skip arrays
+                parts.append(f"{name} = {val}")
+            title_str = ", ".join(parts)
+            plt.title(f'{xaxis}, {yaxis} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+            plt.show()
         
     
     # output array = (n, n, 23) where (:, 0, 0) corresponds to y and (0, :, :) corresponds to x
