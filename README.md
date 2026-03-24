@@ -123,19 +123,19 @@ which outputs the following three plots
 			<p align="center">
 				<a></a>
 			</p>
-			<img src="./media/images/vlm3_with_control_surfaces.png" alt="VLM simulation">
+			<img src="./Examples/LinePlot_V_T.png" alt="Thrust">
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
 				<a></a>
 			</p>
-			<img src="./media/images/wing_optimization.png" alt="Wing optimization">
+			<img src="./Examples/LinePlot_V_eta.png" alt="Propulsion Efficiency">
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
 				<a></a>
 			</p>
-			<img src="./media/images/airfoil_optimization.png" alt="Airfoil optimization">
+			<img src="./Examples/LinePlot_V_Ib.png" alt="Battery Current">
 		</td>
 	</tr>
 </table>
