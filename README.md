@@ -144,7 +144,7 @@ Alternatively, Uinf can be set to a specific value and sweeps of another quantit
 
 
 ### ContourPlot
-For automation of sweeps of two variables, use a contour plot!
+For sweeps of two variables, use a contour plot!
 ```
 import uavdex as ud
 import numpy as np
