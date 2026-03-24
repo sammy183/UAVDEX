@@ -11,7 +11,11 @@ pip install uavdex
 ## PointDesign
 This object allows for calculation of electric aircraft propulsion with specified components across the entire flight envelope.
 
-The 4 key inputs are freestream velocity over the propeller ($U_{\infty}$), altitude ($h$), throttle setting ($\delta T$), and battery state of charge (SOC).
+Key inputs: 
+* freestream velocity over the propeller ($U_{\infty}$)
+* altitude ($h$)
+* throttle setting ($\delta T$)
+* battery state of charge (SOC).
 
 Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be input directly. 
 
