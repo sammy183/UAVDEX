@@ -188,7 +188,7 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 ### Useful plot examples
 Efficiency as a function of velocity and throttle
 <table>
-  <img src="./Examples/ContourPlot_V_dt_eta.png">
+  <img src="./Examples/ContourPlot_V_dT_eta.png">
 </table>
 Efficiency as a function of velocity and cell voltage
 <table>
