@@ -14,7 +14,9 @@ by Sammy N. Nassau, RPI DBF 2021-2026
 This object allows for determination of electric aircraft propulsion with specified components across the entire flight envelope.
 
 The 4 key inputs are freestream velocity over the propeller ($U_{\infty}$), altitude ($h$), throttle setting ($\delta T$), and battery state of charge (SOC).
+
 Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be input directly. 
+
 Battery SOC (typically input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current.
 
 Using runtime, $t$, is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
