@@ -1423,6 +1423,7 @@ def ContourPlotFunc(self, propQ = 'T',
                 parts.append(f"{name} = {val}")
             title_str = ", ".join(parts)
             plt.title(f'{xaxis}, {yaxis} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+            plt.minorticks_on()
             plt.show()
         
     
