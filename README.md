@@ -7,7 +7,7 @@ Anaconda is recommended. In the desired environment, simply run:
 pip install uavdex
 ```
 
-## Documentation for UAVDEX usage<h3>
+## UAVDEX usage<h3>
 by Sammy N. Nassau, RPI DBF 2021-2026
 
 ### PointDesign
