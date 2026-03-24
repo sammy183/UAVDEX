@@ -1,17 +1,15 @@
 # UAV DEsign eXploration
+by Sammy N. Nassau, RPI DBF 2021-2026
+
 ## IN PROGRESS: April 2026 is the target for public release
 
 ## Installation
-Anaconda is recommended. In the desired environment, simply run:
+Anaconda is recommended. In anaconda prompt with the desired env activated, simply run:
 ```
 pip install uavdex
 ```
-
-## UAVDEX usage<h3>
-by Sammy N. Nassau, RPI DBF 2021-2026
-
 ## PointDesign
-This object allows for determination of electric aircraft propulsion with specified components across the entire flight envelope.
+This object allows for calculation of electric aircraft propulsion with specified components across the entire flight envelope.
 
 The 4 key inputs are freestream velocity over the propeller ($U_{\infty}$), altitude ($h$), throttle setting ($\delta T$), and battery state of charge (SOC).
 
@@ -198,10 +196,11 @@ Efficiency as a function of cell voltage and throttle
 <table>
   <img src="./Examples/ContourPlot_Voc_dT_eta.png">
 </table>
+The bounds on these images occur when the throttle setting and battery voltage are low enough that the system cannot produce thrust at the given velocity. Therefore, efficiency goes to zero.
 
 
 ## Future updates
-1. Automatic limit lines on component power/current
+1. Automatic limit lines based on component power/current + propeller tip speed
 2. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
 3. Expansion of database features
 4. Functions for the best Uinf, dT, h for maximum efficiency
