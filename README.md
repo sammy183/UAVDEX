@@ -184,19 +184,29 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 </table>
 
 ### Useful plot examples
-Efficiency as a function of velocity and throttle
 <table>
-  <img src="./Examples/ContourPlot_V_dT_eta.png">
+	<tr>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a>Efficiency as a function of velocity and throttle</a>
+			</p>
+			<img src="./Examples/LinePlot_V_T.png" alt="Thrust">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a>Efficiency as a function of velocity and cell voltage</a>
+			</p>
+      <img src="./Examples/ContourPlot_V_Voc_eta.png">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a>Efficiency as a function of cell voltage and throttle</a>
+			</p>
+			<img src="./Examples/ContourPlot_Voc_dT_eta.png">
+		</td>
+	</tr>
 </table>
-Efficiency as a function of velocity and cell voltage
-<table>
-  <img src="./Examples/ContourPlot_V_Voc_eta.png">
-</table>
-Efficiency as a function of cell voltage and throttle
-<table>
-  <img src="./Examples/ContourPlot_Voc_dT_eta.png">
-</table>
-The bounds on these images occur when the throttle setting and battery voltage are low enough that the system cannot produce thrust at the given velocity. Therefore, efficiency goes to zero.
+The bounds on these plots occur when the throttle setting and battery voltage are low, meaning the propulsion drive cannot produce thrust at the given velocity. Therefore, efficiency goes to zero.
 
 
 ## Future updates
