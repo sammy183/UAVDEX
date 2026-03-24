@@ -59,9 +59,9 @@ design.PointResult(Uinf = 15, dT = 0.7, h = 50, t =30)
 ```
 which returns,
 
-At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m^3, Runtime = 30.0 s \
-Total Thrust (N)               = 50.254 \
-Total Torque (Nm)              = 1.776 \
+At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m^3, Runtime = 30.0 s  
+Total Thrust (N)               = 50.254  
+Total Torque (Nm)              = 1.776  
 RPM                            = 6251.107 \
 Drive Efficiency               = 38.44% \
 Propeller Efficiency           = 64.82% \
