@@ -1,4 +1,6 @@
 # UAV DEsign eXploration
+by Sammy N. Nassau, RPI DBF 2021-2026
+
 ## IN PROGRESS: April 2026 is the target for public release
 
 ## Installation
@@ -6,10 +8,6 @@ Anaconda is recommended. In anaconda prompt with the desired env activated, simp
 ```
 pip install uavdex
 ```
-
-## UAVDEX usage<h3>
-by Sammy N. Nassau, RPI DBF 2021-2026
-
 ## PointDesign
 This object allows for determination of electric aircraft propulsion with specified components across the entire flight envelope.
 
