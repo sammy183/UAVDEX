@@ -23,10 +23,10 @@ To initialize components:
 ```
 import uavdex as ud
 
-design = ud.PointDesign() 				# initialize PointDesign object
+design = ud.PointDesign() 				    # initialize PointDesign object
 design.Motor('C-4130/20', nmot = 2)		# add a motor, and specify the # of motors
 design.Battery('Gaoneng_8S_3300') 		# add a battery 
-design.Prop('16x10E') 					# add a propeller
+design.Prop('16x10E') 					      # add a propeller
 ```
 To view the databases (editable CSV sheets) for motors and batteries, call
 ```
@@ -45,10 +45,10 @@ To run:
 import uavdex as ud
 
 # Component Initialization
-design = ud.PointDesign() 				# initialize PointDesign object
+design = ud.PointDesign() 				    # initialize PointDesign object
 design.Motor('C-4130/20', nmot = 2)		# add a motor, and specify the # of motors
 design.Battery('Gaoneng_8S_3300') 		# add a battery 
-design.Prop('16x10E') 					# add a propeller
+design.Prop('16x10E') 					      # add a propeller
 
 # PointResult
 # Uinf:	velocity in m/s
@@ -59,30 +59,30 @@ design.PointResult(Uinf = 15, dT = 0.7, h = 50, t =30)
 ```
 which returns,
 
-At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m^3, Runtime = 30.0 s
-Total Thrust (N)               = 50.254
-Total Torque (Nm)              = 1.776
-RPM                            = 6251.107
-Drive Efficiency               = 38.44%
-Propeller Efficiency           = 64.82%
-Gearing Efficiency             = 100.00%
-Motor Efficiency               = 91.52%
-ESC Efficiency                 = 65.10%
-Battery Efficiency             = 99.52%
-Mech. Power Out of 1 Motor (W) = 581.428
-Elec. Power Into 1 Motor (W)   = 635.293
-Elec. Power Into 1 ESC (W)     = 975.872
-Waste Power in 1 Motor (W)     = 53.865
-Waste Power in 1 ESC (W)       = 340.579
-Waste Power in 1 Battery (W)   = 9.506
-Current in 1 Motor (A)         = 28.674
-Current in 1 ESC (A)           = 30.832
-Current in Battery (A)         = 61.664
-Voltage in 1 Motor (V)         = 22.156
-Voltage in 1 ESC (V)           = 31.651
-Battery Voltage (V)            = 31.651
-Voltage Per Cell (V)           = 3.976
-State of Charge                = 84.43%
+At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m^3, Runtime = 30.0 s \
+Total Thrust (N)               = 50.254 \
+Total Torque (Nm)              = 1.776 \
+RPM                            = 6251.107 \
+Drive Efficiency               = 38.44% \
+Propeller Efficiency           = 64.82% \
+Gearing Efficiency             = 100.00% \
+Motor Efficiency               = 91.52% \
+ESC Efficiency                 = 65.10% \
+Battery Efficiency             = 99.52% \
+Mech. Power Out of 1 Motor (W) = 581.428 \
+Elec. Power Into 1 Motor (W)   = 635.293 \
+Elec. Power Into 1 ESC (W)     = 975.872 \
+Waste Power in 1 Motor (W)     = 53.865 \
+Waste Power in 1 ESC (W)       = 340.579 \
+Waste Power in 1 Battery (W)   = 9.506\ 
+Current in 1 Motor (A)         = 28.674\ 
+Current in 1 ESC (A)           = 30.832 \
+Current in Battery (A)         = 61.664 \
+Voltage in 1 Motor (V)         = 22.156 \
+Voltage in 1 ESC (V)           = 31.651 \
+Battery Voltage (V)            = 31.651 \
+Voltage Per Cell (V)           = 3.976 \
+State of Charge                = 84.43% 
 
 in the console. 
 
