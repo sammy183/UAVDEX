@@ -11,13 +11,17 @@ pip install uavdex
 ## PointDesign
 This object allows for calculation of electric aircraft propulsion with specified components across the entire flight envelope.
 
-The 4 key inputs are freestream velocity over the propeller ($U_{\infty}$), altitude ($h$), throttle setting ($\delta T$), and battery state of charge (SOC).
+Key inputs: 
+* Uinf:    freestream velocity over the propeller ($U_{\infty}$)
+* h:       altitude ($h$)
+* dT:      throttle setting ($\delta T$)
+* SOC:     battery state of charge (SOC).
 
 Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be input directly. 
 
-Battery SOC (typically input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime, $t$, is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
+Battery SOC (input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
-To initialize components:
+Example of component initialization:
 ```
 import uavdex as ud
 
@@ -183,20 +187,30 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 	</tr>
 </table>
 
-### Useful plot examples
-Efficiency as a function of velocity and throttle
+### Additional ContourPlot examples
 <table>
-  <img src="./Examples/ContourPlot_V_dT_eta.png">
+	<tr>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a>Efficiency for velocity vs throttle</a>
+			</p>
+			<img src="./Examples/ContourPlot_V_dT_eta.png">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a>Efficiency for velocity vs cell voltage</a>
+			</p>
+      <img src="./Examples/ContourPlot_V_Voc_eta.png">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a>Efficiency for cell voltage vs throttle</a>
+			</p>
+			<img src="./Examples/ContourPlot_Voc_dT_eta.png">
+		</td>
+	</tr>
 </table>
-Efficiency as a function of velocity and cell voltage
-<table>
-  <img src="./Examples/ContourPlot_V_Voc_eta.png">
-</table>
-Efficiency as a function of cell voltage and throttle
-<table>
-  <img src="./Examples/ContourPlot_Voc_dT_eta.png">
-</table>
-The bounds on these images occur when the throttle setting and battery voltage are low enough that the system cannot produce thrust at the given velocity. Therefore, efficiency goes to zero.
+The bounds on these plots occur when the throttle setting and battery voltage are low, meaning the propulsion drive cannot produce thrust at the given velocity. Therefore, efficiency goes to zero.
 
 
 ## Future updates
