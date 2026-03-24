@@ -189,6 +189,11 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 	</tr>
 </table>
 
+The bounds on these plots come from when SOC is less than 1 - maximum discharge. Max discharge (set to 85% by default) can be changed when initializing the battery, via
+```
+design.Battery(BATTERYNAME, discharge = 0.9)
+```
+                                          
 ### Additional ContourPlot examples
 <table>
 	<tr>
