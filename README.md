@@ -185,6 +185,26 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 	</tr>
 </table>
 
+### Useful plot examples
+Efficiency as a function of velocity and throttle
+
+Efficiency as a function of velocity and cell voltage
+
+Efficiency as a function of cell voltage and throttle
+
+
+
+## Future updates
+1. Automatic limit lines on component power/current
+2. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
+3. Expansion of database features
+4. Functions for the best Uinf, dT, h for maximum efficiency
+
+Have any requests? Submit a ticket here:
+#### TODO: GOOGLE FORM
+Want a propulsion component added to the default CSV sheets? Request here:
+#### TODO: GOOGLE FORM
+
 <!--
 ### Primary Objects:
 
