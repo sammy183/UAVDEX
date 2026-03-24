@@ -19,7 +19,7 @@ Key inputs:
 
 Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be input directly. 
 
-Battery SOC (typically input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime, $t$, is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
+Battery SOC (typically input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
 Example of component initialization:
 ```
