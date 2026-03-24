@@ -183,14 +183,14 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 	</tr>
 </table>
 
-### Useful plot examples
+### Additional ContourPlot examples
 <table>
 	<tr>
 		<td width="33%" valign="top">
 			<p align="center">
 				<a>Efficiency for velocity vs throttle</a>
 			</p>
-			<img src="./Examples/LinePlot_V_T.png" alt="Thrust">
+			<img src="./Examples/ContourPlot_V_dT_eta.png">
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
