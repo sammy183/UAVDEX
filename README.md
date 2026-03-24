@@ -159,7 +159,7 @@ design.Motor('C-4130/20', nmot = 2)		# add a motor, and specify the # of motors
 design.Battery('Gaoneng_8S_3300') 		# add a battery 
 design.Prop('16x10E') 					# add a propeller
 
-# ContourPlot
+# ContourPlot (sweeps of velocity and runtime)
 design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
                    Uinf = np.linspace(0, 80, n), 
                    t = np.linspace(0, 300, n),
@@ -167,31 +167,6 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
                    h = 100)
 ```
 
-<!--
-add image (code copied from aerosandbox)
-<table>
-	<tr>
-		<td width="33%" valign="top">
-			<p align="center">
-				<a href="https://github.com/peterdsharpe/AeroSandbox/blob/master/tutorial/06%20-%20Aerodynamics/01%20-%20AeroSandbox%203D%20Aerodynamics%20Tools/01%20-%20Vortex%20Lattice%20Method/01%20-%20Vortex%20Lattice%20Method.ipynb">VLM simulation of a glider, aileron deflections of +-30°</a>
-			</p>
-			<img src="./media/images/vlm3_with_control_surfaces.png" alt="VLM simulation">
-		</td>
-		<td width="33%" valign="top">
-			<p align="center">
-				<a href="https://github.com/peterdsharpe/AeroSandbox/blob/master/tutorial/06%20-%20Aerodynamics/01%20-%20AeroSandbox%203D%20Aerodynamics%20Tools/01%20-%20Vortex%20Lattice%20Method/01%20-%20Vortex%20Lattice%20Method.ipynb">Aerodynamic shape optimization of a wing planform, using an arbitrary objective and constraints</a>
-			</p>
-			<img src="./media/images/wing_optimization.png" alt="Wing optimization">
-		</td>
-		<td width="33%" valign="top">
-			<p align="center">
-				<a href="https://github.com/peterdsharpe/AeroSandbox/blob/master/tutorial/06%20-%20Aerodynamics/02%20-%20AeroSandbox%202D%20Aerodynamics%20Tools/02%20-%20NeuralFoil%20Optimization.ipynb">Optimize airfoil shapes with aerodynamic, structural, and manufacturing considerations</a>
-			</p>
-			<img src="./media/images/airfoil_optimization.png" alt="Airfoil optimization">
-		</td>
-	</tr>
-</table>
--->
 
 <!--
 ### Primary Objects:
