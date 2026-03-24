@@ -17,7 +17,7 @@ Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be inp
 
 Battery SOC (typically input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime, $t$, is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
-To initialize components, run the following in a .py or .ipynb file:
+Example of component initialization:
 ```
 import uavdex as ud
 
