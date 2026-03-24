@@ -12,14 +12,14 @@ pip install uavdex
 This object allows for calculation of electric aircraft propulsion with specified components across the entire flight envelope.
 
 Key inputs: 
-* freestream velocity over the propeller ($U_{\infty}$)
-* altitude ($h$)
-* throttle setting ($\delta T$)
-* battery state of charge (SOC).
+* Uinf:    freestream velocity over the propeller ($U_{\infty}$)
+* h:       altitude ($h$)
+* dT:      throttle setting ($\delta T$)
+* SOC:     battery state of charge (SOC).
 
 Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be input directly. 
 
-Battery SOC (typically input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
+Battery SOC (input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
 Example of component initialization:
 ```
