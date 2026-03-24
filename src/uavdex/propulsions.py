@@ -558,13 +558,13 @@ def VocFunc(SOC, BattType):
     Determines the battery Voltage (Voc) as a function of State of Charge (SOC) given from 0-1 for a specified battery chemistry
     
     LiPo
-    Main equation from Chen 2006
-    https://rincon-mora.gatech.edu/publicat/jrnls/tec05_batt_mdl.pdf
-    
-    Alternative from Jeong 2020
+    Main equation from Jeong 2020
     Voc = 1.7*(SOC**3) - 2.1*(SOC**2) + 1.2*SOC + 3.4
     https://www.researchgate.net/publication/347270768_Improvement_of_Electric_Propulsion_System_Model_for_Performance_Analysis_of_Large-Size_Multicopter_UAVs
     
+    alternative equation from Chen 2006
+    https://rincon-mora.gatech.edu/publicat/jrnls/tec05_batt_mdl.pdf
+        
     NOTE:
     Jeong 2020 also presents resistance as a function of cell energy:
     Rbatt.cell = 21.0*(ebatt.cell)**-0.8056
@@ -577,7 +577,8 @@ def VocFunc(SOC, BattType):
     TODO: implment battery voltage equation adjustments based on predicted health (measured via Vsoc at full charge!)
     '''
     if BattType == 'LiPo':
-        return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
+        return(1.7*SOC**3 - 2.1*SOC**2 + 1.2*SOC + 3.4)
+        # return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
     elif BattType == 'Liion':
         return(-4.48*((1-SOC)**5) + 9.09*((1-SOC)**4) - 7.08*((1-SOC)**3) + 2.32*((1-SOC)**2) - 0.76*(1-SOC) + 4.10)
     else:
@@ -776,16 +777,17 @@ def VocFuncBase(SOC, BattType):
     Determines the battery Voltage (Voc) as a function of State of Charge (SOC) given from 0-1 for a specified battery chemistry
     
     LiPo
-    Main equation from Chen 2006
-    https://rincon-mora.gatech.edu/publicat/jrnls/tec05_batt_mdl.pdf
-    
-    Alternative from Jeong 2020
+    Main equation from Jeong 2020
     Voc = 1.7*(SOC**3) - 2.1*(SOC**2) + 1.2*SOC + 3.4
     https://www.researchgate.net/publication/347270768_Improvement_of_Electric_Propulsion_System_Model_for_Performance_Analysis_of_Large-Size_Multicopter_UAVs
     
+    alternative equation from Chen 2006
+    https://rincon-mora.gatech.edu/publicat/jrnls/tec05_batt_mdl.pdf
+        
     NOTE:
     Jeong 2020 also presents resistance as a function of cell energy:
     Rbatt.cell = 21.0*(ebatt.cell)**-0.8056
+    
     
     Liion
     https://www.researchgate.net/publication/346515863_Comparison_of_Lithium-Ion_Battery_Pack_Models_Based_on_Test_Data_from_Idaho_and_Argonne_National_Laboratories
@@ -794,7 +796,8 @@ def VocFuncBase(SOC, BattType):
     TODO: implment battery voltage equation adjustments based on predicted health (measured via Vsoc at full charge!)
     '''
     if BattType == 'LiPo':
-        return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
+        return(1.7*SOC**3 - 2.1*SOC**2 + 1.2*SOC + 3.4)
+        # return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
     elif BattType == 'Liion':
         return(-4.48*((1-SOC)**5) + 9.09*((1-SOC)**4) - 7.08*((1-SOC)**3) + 2.32*((1-SOC)**2) - 0.76*(1-SOC) + 4.10)
     else:
