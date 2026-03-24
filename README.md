@@ -113,10 +113,6 @@ design.Prop('16x10E') 					# add a propeller
 # LinePlot usage
 design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf = np.linspace(0, 50), dT = 1.0, h = 100, t = 30)
 ```
-<!--
-<a href="https://github.com/peterdsharpe/AeroSandbox/blob/master/tutorial/06%20-%20Aerodynamics/01%20-%20AeroSandbox%203D%20Aerodynamics%20Tools/01%20-%20Vortex%20Lattice%20Method/01%20-%20Vortex%20Lattice%20Method.ipynb">VLM simulation of a glider, aileron deflections of +-30°</a>
--->
-which outputs the following three plots
 <table>
 	<tr>
 		<td width="33%" valign="top">
@@ -166,7 +162,28 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
                    dT = 1.0, 
                    h = 100)
 ```
-
+<table>
+	<tr>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a></a>
+			</p>
+			<img src="./Examples/ContourPlot_V_t_T.png" alt="Thrust">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a></a>
+			</p>
+			<img src="./Examples/ContourPlot_V_t_eta.png" alt="Propulsion Efficiency">
+		</td>
+		<td width="33%" valign="top">
+			<p align="center">
+				<a></a>
+			</p>
+			<img src="./Examples/ContourPlot_V_t_Ib.png" alt="Battery Current">
+		</td>
+	</tr>
+</table>
 
 <!--
 ### Primary Objects:
