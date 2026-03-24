@@ -57,7 +57,7 @@ design.Prop('16x10E')                  # add a propeller
 # dT: 	throttle (0-1)
 # h: 	altitude in m 
 # t: 	runtime in s
-design.PointResult(Uinf = 15, dT = 0.7, h = 50, t =30)
+design.PointResult(Uinf = 15, dT = 0.7, h = 50, t = 30)
 ```
 which prints the following to the console:
 > At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m<sup>3</sup>, Runtime = 30.0 s  
