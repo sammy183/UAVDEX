@@ -1,5 +1,7 @@
 # UAV DEsign eXploration
-by Sammy N. Nassau, RPI DBF 2021-2026
+Sammy N. Nassau, RPI DBF 2021-2026
+
+[UAVDEX Repo](https://github.com/sammy183/UAVDEX)
 
 ## IN PROGRESS: April 2026 is the target for public release
 
@@ -20,7 +22,7 @@ Key inputs:
   * **OR** *Voc*: cell voltage (~3.3-4.2 for LiPo)
   * **OR** *t*: runtime (s)
 
-Runtime ($t$, in seconds) assumes constant current. This is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
+Runtime assumes constant current. This is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
 ### Component initialization
 ```python
