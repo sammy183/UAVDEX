@@ -240,10 +240,11 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 
 
 ## Future updates
-1. Automatic limit lines based on component power/current + propeller tip speed
-2. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
-3. Expansion of database features
-4. Functions for the best Uinf, dT, h for maximum efficiency
+1. Ability to open databases automatically on linux and mac systems
+2. Automatic limit lines based on component power/current + propeller tip speed
+3. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
+4. Expansion of database features
+5. Functions for the best Uinf, dT, h for maximum efficiency
 
 Have any requests? Submit a ticket here:
 #### TODO: GOOGLE FORM
