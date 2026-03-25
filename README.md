@@ -193,7 +193,7 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
     </td>
   </tr>
 </table>
-The bounds on these plots come from when SOC is less than (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at the specified Uinf, dT, Voc, h.
+At some constant velocity, the right side bound of the contour plot indicates the runtime of the propulsion system in seconds. This is determined by where SOC = (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at some combination of Uinf, dT, Voc, and h. 
                                           
 ### Additional ContourPlot examples
 <table>
