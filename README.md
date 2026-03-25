@@ -5,45 +5,46 @@ by Sammy N. Nassau, RPI DBF 2021-2026
 
 ## Installation
 Anaconda is recommended. In anaconda prompt with the desired env activated, simply run:
-```
+```python
 pip install uavdex
 ```
 ## PointDesign
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
 Key inputs:
-* Uinf:    freestream velocity over the propeller ($U_{\infty}$)
-* h:       altitude ($h$)
-* dT:      throttle setting ($\delta T$)
-* SOC:     battery state of charge (SOC).
+* *Uinf*:    freestream velocity over the propeller (m/s)
+* *h*:       altitude (m)
+   * **OR** *rho*: density (kg/m<sup>3</sup>)   
+* *dT*:      throttle setting (0-1)
+* *SOC*:     battery state of charge (0-1)
+  * **OR** *Voc*: cell voltage (~3.3-4.2 for LiPo)
+  * **OR** *t*: runtime (s)
 
-Altitude (in meters) determines the air density ($\rho$). $\rho$ can also be input directly. 
+Runtime ($t$, in seconds) assumes constant current. This is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
-Battery SOC (input as decimal from 0-1), can instead by specified by cell voltage ($V_{oc}$), or runtime ($t$, in seconds) assuming constant current. Using runtime is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
-
-*Component initialization example*
-```
+### Component initialization
+```python
 import uavdex as ud
 
-design = ud.PointDesign() 			   # initialize PointDesign object
-design.Motor('C-4130/20', nmot = 2)    # add a motor, and specify the # of motors
-design.Battery('Gaoneng_8S_3300')      # add a battery 
-design.Prop('16x10E')                  # add a propeller
+design = ud.PointDesign() 			                    # initialize PointDesign object
+design.Motor('C-4130/20', nmot = 2)                     # add a motor, and specify the # of motors (nmot = 1 by default)
+design.Battery('Gaoneng_8S_3300', discharge = 0.85)     # add a battery, and specify the maximum discharge (default is 0.8, aka 80%)
+design.Prop('16x10E')                                   # add a propeller
 ```
 To view the databases (editable CSV sheets) for motors and batteries, call
-```
+```python
 design.OpenMotorData()
 design.OpenBatteryData()
 ```
 and the CSV sheets will be opened by your default system viewer.
 
-All values needed are typically available online, meaning users can add whatever components they desire.
+All values required are typically provided by the manufacturer, meaning users can add whatever components they desire.
 
 ### PointResult
-The simplist function to get propulsion quantities (called 'propQ' in the code).
+A simple function to get propulsion quantities (called 'propQ' in the code) at a specified flight condition.
 
 *PointResult example*
-```
+```python
 import uavdex as ud
 
 # Component Initialization
@@ -88,21 +89,21 @@ which prints the following to the console:
 ### LinePlot
 To automate a *sweep* of any of the 4 variables, use a LinePlot.
 The propQ options (corresponding to the PointResult output) are:
-```
+```python
 'T', 'Q', 'RPM', 'eta_drive', 'eta_p', 'eta_g', 'eta_m', 'eta_c', 'eta_b', 'Pout', 'Pin_m', 'Pin_c', 'Pw_m', 'Pw_c', 'Pw_b', 'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 'Voc', 'SOC'
 ```
 which must be input as 
-```
+```python
 propQ = 'T'
 ```
 or 
-```
+```python
 propQ = ['T', 'eta_drive', 'Ib']
 ```
 to plot multiple propQs for the same sweep.
 
 *LinePlot example*
-```
+```python
 import uavdex as ud
 import numpy as np
 
@@ -139,7 +140,7 @@ design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf = np.linspace(0, 50), dT = 
 </table>
 
 np.linspace simply samples 50 points by default between the start and ending values. To sample 200 points and get a smoother curve, use 
-```
+```python
 Uinf = np.linspace(0, 50, 200)
 ```
 Alternatively, Uinf can be set to a specific value and sweeps of another quantity (dT, h/rho, or SOC/Voc/t) used.
@@ -149,7 +150,7 @@ Alternatively, Uinf can be set to a specific value and sweeps of another quantit
 For sweeps of two variables, use a contour plot!
 
 *ContourPlot example*
-```
+```python
 import uavdex as ud
 import numpy as np
 
@@ -158,6 +159,9 @@ design = ud.PointDesign() 				# initialize PointDesign object
 design.Motor('C-4130/20', nmot = 2)		# add a motor, and specify the # of motors
 design.Battery('Gaoneng_8S_3300') 		# add a battery 
 design.Prop('16x10E') 					# add a propeller
+
+# to control the number of points used in linspace (n = 50 --> ~5s runtime, n = 200 --> ~15s runtime)
+n = 120  
 
 # ContourPlot (sweeps of velocity and runtime)
 design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
@@ -189,29 +193,44 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 	</tr>
 </table>
 
-The bounds on these plots come from when SOC is less than 1 - maximum discharge. Max discharge (set to 85% by default) can be changed when initializing the battery, via
-```
-design.Battery(BATTERYNAME, discharge = 0.9)
-```
+The bounds on these plots come from when SOC is less than (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at the specified Uinf, dT, Voc, h.
                                           
 ### Additional ContourPlot examples
 <table>
 	<tr>
 		<td width="33%" valign="top">
 			<p align="center">
-				<a>Efficiency for velocity vs throttle</a>
+				<a>Efficiency for velocity vs throttle
+          <pre>design.ContourPlot(propQ = 'eta_drive',
+                  Uinf = np.linspace(0, 45, 200), 
+                  dT = np.linspace(0.2, 1.0, 200), 
+                  h = 50, 
+                  t = 20)</pre>
+        </a>
 			</p>
 			<img src="./Examples/ContourPlot_V_dT_eta.png">
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
-				<a>Efficiency for velocity vs cell voltage</a>
+				<a>Efficiency for velocity vs cell voltage
+          <pre>design.ContourPlot(propQ = 'eta_drive',
+                  Uinf = np.linspace(0, 45, 200), 
+                  dT = 1.0,
+                  h = 50, 
+                  Voc = np.linspace(3.5, 4.2, 200)</pre>
+        </a>
 			</p>
       <img src="./Examples/ContourPlot_V_Voc_eta.png">
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
-				<a>Efficiency for cell voltage vs throttle</a>
+				<a>Efficiency for cell voltage vs throttle
+           <pre>design.ContourPlot(propQ = 'eta_drive',
+                  Uinf = 30.0,
+                  dT = np.linspace(0.2, 1.0, 200),
+                  h = 50, 
+                  Voc = np.linspace(3.5, 4.2, 200)</pre>
+        </a>
 			</p>
 			<img src="./Examples/ContourPlot_Voc_dT_eta.png">
 		</td>
