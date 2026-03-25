@@ -246,9 +246,10 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 4. Expansion of database features
 5. Functions for the best Uinf, dT, h for maximum efficiency
 
-Have any requests? Submit a ticket here:
+Have any requests? Submit a ticket on the google form below or open a github issue thread.
 #### TODO: GOOGLE FORM
-Want a propulsion component added to the default CSV sheets? Request here:
+
+Want a propulsion component added to the default package CSV sheets? Request here:
 #### TODO: GOOGLE FORM
 
 <!--
