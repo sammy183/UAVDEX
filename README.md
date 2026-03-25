@@ -94,13 +94,10 @@ The propQ options (corresponding to the PointResult output) are:
 ```
 which must be input as 
 ```python
-propQ = 'T'
+propQ = 'T'                       # for a single plot
+# OR
+propQ = ['T', 'eta_drive', 'Ib']  # to plot multiple propQs for the same sweep
 ```
-or 
-```python
-propQ = ['T', 'eta_drive', 'Ib']
-```
-to plot multiple propQs for the same sweep.
 
 *LinePlot example*
 ```python
