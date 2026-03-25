@@ -31,7 +31,7 @@ design.Motor('C-4130/20', nmot = 2)                     # add a motor, and speci
 design.Battery('Gaoneng_8S_3300', discharge = 0.85)     # add a battery, and specify the maximum discharge (default is 0.8, aka 80%)
 design.Prop('16x10E')                                   # add a propeller
 ```
-To view the databases (editable CSV sheets) for motors and batteries, call
+To view the databases (editable CSV sheets) for motors and battery names, call
 ```python
 design.OpenMotorData()
 design.OpenBatteryData()
