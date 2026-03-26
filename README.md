@@ -14,15 +14,15 @@ pip install uavdex
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
 Key inputs:
-* *Uinf*:    freestream velocity over the propeller (m/s)
-* *h*:       altitude (m)
-   * **OR** *rho*: density (kg/m<sup>3</sup>)   
-* *dT*:      throttle setting (0-1)
-* *SOC*:     battery state of charge (0-1)
-  * **OR** *Voc*: cell voltage (~3.3-4.2 for LiPo)
-  * **OR** *t*: runtime (s)
+* **Uinf**:    freestream velocity over the propeller (m/s)
+* **h**:       altitude (m)
+   * *OR* **rho**: density (kg/m<sup>3</sup>)   
+* **dT**:      throttle setting (0-1)
+* **SOC**:     battery state of charge (0-1)
+  * *OR* **Voc**: cell voltage (~3.3-4.2 for LiPo)
+  * *OR* **t**: runtime (s)
 
-Runtime assumes constant current. This is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
+Runtime assumes constant current. This is valid when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
 ### Component initialization
 ```python
