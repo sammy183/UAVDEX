@@ -1,5 +1,7 @@
 # UAV DEsign eXploration
-by Sammy N. Nassau, RPI DBF 2021-2026
+Sammy N. Nassau, RPI DBF 2021-2026
+
+[UAVDEX Repo](https://github.com/sammy183/UAVDEX)
 
 ## IN PROGRESS: April 2026 is the target for public release
 
@@ -12,15 +14,15 @@ pip install uavdex
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
 Key inputs:
-* *Uinf*:    freestream velocity over the propeller (m/s)
-* *h*:       altitude (m)
-   * **OR** *rho*: density (kg/m<sup>3</sup>)   
-* *dT*:      throttle setting (0-1)
-* *SOC*:     battery state of charge (0-1)
-  * **OR** *Voc*: cell voltage (~3.3-4.2 for LiPo)
-  * **OR** *t*: runtime (s)
+* **Uinf**:    freestream velocity over the propeller (m/s)
+* **h**:       altitude (m)
+   * *OR* **rho**: density (kg/m<sup>3</sup>)   
+* **dT**:      throttle setting (0-1)
+* **SOC**:     battery state of charge (0-1)
+  * *OR* **Voc**: cell voltage (~3.3-4.2 for LiPo)
+  * *OR* **t**: runtime (s)
 
-Runtime ($t$, in seconds) assumes constant current. This is acceptable when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
+Runtime assumes constant current. This is valid when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
 ### Component initialization
 ```python
@@ -94,13 +96,10 @@ The propQ options (corresponding to the PointResult output) are:
 ```
 which must be input as 
 ```python
-propQ = 'T'
+propQ = 'T'                       # for a single plot
+# OR
+propQ = ['T', 'eta_drive', 'Ib']  # to plot multiple propQs for the same sweep
 ```
-or 
-```python
-propQ = ['T', 'eta_drive', 'Ib']
-```
-to plot multiple propQs for the same sweep.
 
 *LinePlot example*
 ```python
@@ -123,18 +122,21 @@ design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf = np.linspace(0, 50), dT = 
 				<a></a>
 			</p>
 			<img src="./Examples/LinePlot_V_T.png" alt="Thrust">
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
 				<a></a>
 			</p>
 			<img src="./Examples/LinePlot_V_eta.png" alt="Propulsion Efficiency">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
 				<a></a>
 			</p>
 			<img src="./Examples/LinePlot_V_Ib.png" alt="Battery Current">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 		</td>
 	</tr>
 </table>
@@ -170,30 +172,27 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
                    dT = 1.0, 
                    h = 100)
 ```
+<!-- the following is incredibly cooked, but it gets the plots to be large and pretty --> 
 <table>
-	<tr>
-		<td width="33%" valign="top">
-			<p align="center">
-				<a></a>
-			</p>
-			<img src="./Examples/ContourPlot_V_t_T.png" alt="Thrust">
-		</td>
-		<td width="33%" valign="top">
-			<p align="center">
-				<a></a>
-			</p>
-			<img src="./Examples/ContourPlot_V_t_eta.png" alt="Propulsion Efficiency">
-		</td>
-		<td width="33%" valign="top">
-			<p align="center">
-				<a></a>
-			</p>
-			<img src="./Examples/ContourPlot_V_t_Ib.png" alt="Battery Current">
-		</td>
-	</tr>
+  <tr>
+    <td align="center" valign="top">
+      Thrust for Uinf vs t<br>
+      <img src="./Examples/ContourPlot_V_t_T.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="center" valign="top">
+      Propulsion Efficiency for Uinf vs t<br>
+      <img src="./Examples/ContourPlot_V_t_eta.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="center" valign="top">
+      Battery Current for Uinf vs t<br>
+      <img src="./Examples/ContourPlot_V_t_Ib.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+  </tr>
 </table>
-
-The bounds on these plots come from when SOC is less than (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at the specified Uinf, dT, Voc, h.
+At some constant velocity, the right side bound of the contour plot indicates the runtime of the propulsion system in seconds. This is determined by where SOC = (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at some combination of Uinf, dT, Voc, and h. 
                                           
 ### Additional ContourPlot examples
 <table>
@@ -240,8 +239,8 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 
 
 ## Future updates
-1. Ability to open databases automatically on linux and mac systems
-2. Automatic limit lines based on component power/current + propeller tip speed
+1. Automatic limit lines based on component power/current + propeller tip speed
+2. Battery resistance near low SOC modeled
 3. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
 4. Expansion of database features
 5. Functions for the best Uinf, dT, h for maximum efficiency
