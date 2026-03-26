@@ -35,7 +35,7 @@ from uavdex import _uavdex_root
 from uavdex.performance import *
 from uavdex.propulsions import *
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
-
+from uavdex.utils import *
 
 ### OLD LOCAL TESTING
 # from performance import *
@@ -88,36 +88,22 @@ class PointDesign:
         Opens the Motor CSV for editing/review
         '''
         filename = path_to_data / 'Motors.csv'
-        try: # windows main
-            os.startfile(filename)
-        except AttributeError:
-            try: # windows backup
-                subprocess.Popen(['start', filename], shell=True)
-            except:
-                os.system(f'open {filename}') # for mac
+        open_csv(filename)
     
     def OpenBatteryData(self):
         '''
         Opens the Batteries CSV for editing/review
         '''
+        
         filename = path_to_data / 'Batteries.csv'
-        try: # windows main
-            os.startfile(filename)
-        except AttributeError:
-            try: # windows backup
-                subprocess.Popen(['start', filename], shell=True)
-            except:
-                os.system(f'open {filename}') # for mac
+        open_csv(filename)
     
     def OpenPropellerData(self):
         '''
         Opens the Propeller data folder for editing/review
         '''
         folder_path = path_to_data /'APCPropDatabase'
-        try:
-            os.startfile(folder_path)
-        except:
-            os.system(f'open {folder_path}') # for mac
+        open_folder(folder_path)
             
     ########################################################
     ########################################################
@@ -175,27 +161,20 @@ class PointDesign:
         '''
         prop_name is a string with the form 16x10E, 12x12 (no PER3_ or .dat for useability'''
         self.prop_name = prop_name
-        self.PROP_DATA, self.NUMBA_PROP_DATA = parse_propeller_data(prop_name)
         self.COEF_PROP_DATA, self.COEF_NUMBA_PROP_DATA = parse_coef_propeller_data(prop_name)
-        rpm_vals, self.THRUST_POLYS, self.TORQUE_POLYS, self.V_DOMAINS  = initialize_RPM_polynomials(self.PROP_DATA)
-        self.rpm_list = np.array(rpm_vals)
+        self.rpm_list = np.array(self.COEF_PROP_DATA['rpm_list'])
         self.propdiam = float(prop_name.split('x')[0])*0.0254 # convert inches to m
         self.prop = True
+        
+        # self.PROP_DATA, self.NUMBA_PROP_DATA = parse_propeller_data(prop_name)
+        # rpm_vals, self.THRUST_POLYS, self.TORQUE_POLYS, self.V_DOMAINS  = initialize_RPM_polynomials(self.PROP_DATA)
+
         
     ########################################################
     ########################################################
     ############### PROPULSION FUNCTIONS ###################
     ########################################################
     ########################################################
-    # need functions for these combinations:
-        # dT, Vinf, rho, t
-        # dT, Vinf, rho, SOC
-        # dT, Vinf, rho, Voc
-        
-        # dt, Vinf, h, t
-        # dT, Vinf, h, SOC
-        # dT, Vinf, h, Voc
-
     def PointResult(self, Uinf = None, dT = None, 
                     rho = None, h = None, 
                     SOC = None, Voc = None, t = None, 
@@ -208,7 +187,7 @@ class PointDesign:
             rho         (density, kg/m3) 
                 or h    (altitude, m)
             SOC         (state of charge, 0-1) 
-                or Voc  (cell voltage, 2-4.2) 
+                or Voc  (cell voltage, 3.3-4.2) 
                 or t    (runtime, s)
             
         Output
@@ -344,174 +323,6 @@ class PointDesign:
                                Uinf = Uinf, dT = dT, 
                                rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
                                verbose = verbose, plot = plot))
-    
-    # def PointResult(self, Vinf, dT, t, rho = self.rho):
-        
-    
-    # def LinePlot(self, SOC = None, Voc = None, t = None, dT = None, Vinf = None, propQ = 'thrust', n = 500, plot = True, sigfigs = 4):
-    #     '''
-    #     Input two of SOC/Voc/t, dT, Vinf.
-    #     The selected propQ will be plotted wrt the unfixed variable.
-
-    #     Defaults to velocity curve at 80% state of charge, 100% throttle.
-                
-    #     SOC is the battery state of charge as a fraction between 0-1
-    #     Voc is the voltage in a single battery cell
-    #     t is the runtime assuming a constant current 
-        
-    #     dT is the throttle level; fraction between 0-1
-    #     Vinf is the freestream velocity in m/s
-        
-        
-    #     T           thrust (lbf) (combined for all motors)
-    #     Q           torque (N*m) (combined for all motors)
-    #     RPM
-        
-    #     eta_drive   combined efficiency
-    #     eta_p       prop efficiency
-    #     eta_m       motor efficiency
-    #     eta_c       controller (ESC) efficiency
-        
-    #     Pout        for one motor mechanical W (Q*kt = Q*KV*(pi/30))
-    #     Pin_m       for one motor electric W
-    #     Pin_c       for one ESC electric W
-        
-    #     Im          motor current
-    #     Ic          controller current
-    #     Ib          battery current
-        
-    #     Vm          motor voltage
-    #     Vc          ESC voltage
-    #     Vb          battery voltage
-    #     Voc         cell voltage (open circuit)
-    #     SOC         state of charge (%)
-    #     ''' 
-    #     # TODO: ERROR MESSAGES FOR
-    #         # 0.0 > SOC or SOC > 1.0
-    #         # 0.0 > dT or dT > 1.0 
-    #         # Voc > 4.2 (for LiPo)
-    #         # Voc < 2.5 (for LiPo)
-    #         # t < 0.0 
-    #         # t so large it results in SOC < 1 - ds (implement in LinePlot code)
-    #         # Vinf < 0.0 
-    #         # (DONE) two of SOC, Voc, t selected 
-            
-            
-    #     # possible options:
-    #         # 1. Input SOC, dT, plot Vinf
-    #         # 2. Input Voc, dT, plot Vinf
-    #         # 3. Input t, dT, plot Vinf
-            
-    #         # 4. Input SOC, Vinf, plot dT
-    #         # 5. Input Voc, Vinf, plot dT
-    #         # 6. Input t, Vinf, plot dT
-            
-    #     # how to best distinguish between what to plot??
-    #         # 7. Input Vinf, dT, plot SOC
-    #         # 8. Input Vinf, dT, plot Voc
-    #         # 9. Input Vinf, dt, plot t
-            
-    #     # error arise when two of SOC, Voc, t are input
-    #     # errors when variables are outside of their ranges
-    #     # errors when only one of Vinf, dT, SOC/Voc/t input
-    #     # errors when three of SOC/Voc/t, dT, Vinf input
-        
-    #     # SOC and Voc are pretty easy to distinguish between
-    #     # but t requires a completely different model formulation
-        
-    #     # error checking 
-    #     errormessage = 'Only one of Voc, SOC, and t can be selected at once'
-    #     self.SOCinput = False
-    #     self.Vocinput = False
-    #     self.tinput = False
-    #     if Voc != None and t != None:
-    #         raise ValueError(errormessage)
-    #     elif Voc != None and SOC != None:
-    #         raise ValueError(errormessage)
-    #     elif t != None and SOC != None: 
-    #         raise ValueError(errormessage)
-    #     elif Voc != None:
-    #         self.Vocinput = True
-    #         fix1 = Voc
-    #     elif t != None:
-    #         self.tinput = True
-    #         fix1 = t
-    #     elif SOC != None:
-    #         self.SOCinput = True
-    #         fix1 = SOC 
-        
-    #     # print(f't in = {self.tinput}\nSOC = {self.SOCinput}\nVoc = {self.Vocinput}')
-    #     fix2 = dT 
-        
-    #     self.propQ = propQ
-    #     values = pnewfornow.LinePlot_Vinf(self, fix1, fix2, plot = True, n = n, sigfigs = sigfigs)
-    #     return(values)
-    
-    # def PropulsionSlice(self, slicevalue, sliceinput = 'SOC', quantity = 'thrust', throttle = 1.0, n = 20, plot = True, verbose = True):
-    #     '''
-    #     Plots and returns a propulsion quantity (see list below) wrt velocity at a given SOC/Voc
-        
-    #     OR plots the quantity wrt SOC/Voc for a given velocity!
-        
-    #     sliceinput: SOC, Voc, velocity
-        
-    #     possible propulsion quantities:
-    #         thrust (lbf) (combined for all motors)
-    #         torque (N*m) (combined for all motors)
-    #         RPM
-            
-    #         eta_p       (prop efficiency)
-    #         eta_m       (motor efficiency)
-    #         eta_c       (controller efficiency)
-    #         eta_drive   (combined efficiency)
-            
-    #         Pout    (mechanical W)
-    #         Pin_m   (electric W)
-    #         Pin_c   (electric W)
-            
-    #         Im      (motor current)
-    #         Ic      (controller current)
-    #         Ib      (battery current)
-            
-    #         Voc    (cell voltage)
-    #         Vbat    (battery voltage)
-    #         Vm      (motor voltage)
-    #         Vc      (controller voltage)
-            
-    #     When using velocity = 0.0 for static thrust comparisons, remember that eta_p will go to 0, meaning
-    #     eta_drive will also go to 0. This is because with no forward motion, J = 0, so eta must also = 0.
-        
-    #     Optionally increase the number of grid points for a smoother curve by increasing n
-    #     '''
-        
-    #     if self.CheckVariables():
-    #         self.qofinterest = quantity
-    #         if sliceinput == 'SOC':
-    #             self.sliceinput = 'SOC'
-    #             self.slicevalue = slicevalue
-    #         elif sliceinput == 'Voc':
-    #             self.sliceinput = 'Voc'
-    #             self.slicevalue = slicevalue
-    #         elif sliceinput == 'velocity':
-    #             self.sliceinput = 'velocity'
-    #             self.slicevalue = slicevalue
-    #         else:
-    #             print('SOCinput not recognized.\nPlease provide State Of Charge (SOC) as a fraction or Voltage per cell in series (Voc) in Volts or Velocity in m/s')
-    #             return()
-            
-    #         values = propulsions.DynamicPropulsionPlot(self, n, throttle = throttle, plot = plot, verbose = verbose)
-    #         return(values)
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         
     # #############################################################################
     # #############################################################################

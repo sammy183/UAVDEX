@@ -138,7 +138,7 @@ Significant loss of accuracy due to the constant I0 assumption compared to the o
 import numpy as np
 from numpy.polynomial import Polynomial
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+# from tqdm import tqdm
 from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
@@ -246,8 +246,16 @@ def bisectionBase(low, high, func, *args):
 def parse_coef_propeller_data(prop_name):
     """
     prop_name in the form: 16x10E, 18x12E, 12x12, etc (no PER3_ and no .dat to make it easier for new users)
-    Parses the provided PER3_16x10E.dat content to extract RPM, V (m/s), Thrust (N), Torque (N-m).
-    Stores in PROP_DATA as {rpm: {'V': np.array, 'Thrust': np.array, 'Torque': np.array}}
+    Parses the provided PER3_16x10E.dat content to extract RPM, J (advance ratio), CT (coef. thrust), CP (coef torque)
+    
+    Stores in PROP_DATA as {rpm: {'J': np.array, 'CT': np.array, 'CP': np.array}}
+    
+    Stores same data in numba_prop_data in a 3D np.array of (i, j, k), 
+        where i corresponds to rpm_values[i], 
+        j corresponds to J, CT, CP, 
+        k corresponds to the values
+        
+    # todo: improve docstring
     """    
     PROP_DATA = {}
 
@@ -296,11 +304,25 @@ def parse_coef_propeller_data(prop_name):
     # array based datastructure where each index corresponds to rpm_values[i] (or i+1*1000 RPM)
     # and in each index there is [[V values], [Thrust values], [Torque values]] at the indices, 0, 1, 2
     numba_prop_data = []
+    datasizes = []
     for RPM in PROP_DATA['rpm_list']:
         datasection = np.array([PROP_DATA[RPM]['J'], 
                                 PROP_DATA[RPM]['CT'], 
                                 PROP_DATA[RPM]['CP']])
+        datasizes.append(datasection.shape[1])
         numba_prop_data.append(datasection)
+    
+    # to avoid a list of np arrays, add 0s to the end of all arrays to match the sizes
+    # some props have (3, 30) for most datasection shapes, then (3, 29) for a few, 
+    # which prevents combination into a single np array
+    datasizes = np.array(datasizes)
+    max_data_size = datasizes.max()
+    zeroarr = np.zeros((3, 1))
+    for i, data in enumerate(numba_prop_data):
+        while data.shape[1] < max_data_size:
+            data = np.concatenate((data,zeroarr), 1)
+            numba_prop_data[i] = data        
+    numba_prop_data = np.stack(numba_prop_data) # now this is a 3D array!  
         
     return(PROP_DATA, numba_prop_data)
 
@@ -309,6 +331,8 @@ def parse_propeller_data(prop_name):
     prop_name in the form: 16x10E, 18x12E, 12x12, etc (no PER3_ and no .dat to make it easier for new users)
     Parses the provided PER3_16x10E.dat content to extract RPM, V (m/s), Thrust (N), Torque (N-m).
     Stores in PROP_DATA as {rpm: {'V': np.array, 'Thrust': np.array, 'Torque': np.array}}
+    
+    NOTE: this is an older function, remnant of before I used the propeller coefficients effectively
     """    
     PROP_DATA = {}
 
@@ -333,10 +357,10 @@ def parse_propeller_data(prop_name):
             # Parse data rows (ensure it's a data line with enough columns)
             parts = line.split()
             try:
-                v_mph = float(parts[0])  # V in mph
-                torque_nm = float(parts[9])  # Torque (N-m)
-                thrust_n = float(parts[10])  # Thrust (N)
-                v_mps = v_mph * MPH_TO_MPS  # Convert to m/s
+                v_mph = float(parts[0])         # V in mph
+                torque_nm = float(parts[9])     # Torque (N-m)
+                thrust_n = float(parts[10])     # Thrust (N)
+                v_mps = v_mph * MPH_TO_MPS      # Convert to m/s
                 table_lines.append((v_mps, thrust_n, torque_nm))
             except (ValueError, IndexError):
                 continue  # Skip malformed lines
@@ -354,15 +378,29 @@ def parse_propeller_data(prop_name):
     # Sort RPM keys for efficient lookup
     PROP_DATA['rpm_list'] = sorted(PROP_DATA.keys())
     
-    # array based datastructure where each index corresponds to rpm_values[i] (or i+1*1000 RPM)
+    # array based datastructure where each index corresponds to rpm_values[i] (or (i+1)*1000 RPM)
     # and in each index there is [[V values], [Thrust values], [Torque values]] at the indices, 0, 1, 2
     numba_prop_data = []
+    datasizes = []
     for RPM in PROP_DATA['rpm_list']:
         datasection = np.array([PROP_DATA[RPM]['V'], 
                                 PROP_DATA[RPM]['Thrust'], 
                                 PROP_DATA[RPM]['Torque']])
+        datasizes.append(datasection.shape[1])
         numba_prop_data.append(datasection)
-        
+    
+    # to avoid a list of np arrays, add 0s to the end of all arrays to match the sizes
+    # some props have (3, 30) for most datasection shapes, then (3, 29) for a few, 
+    # which prevents combination into a single np array
+    datasizes = np.array(datasizes)
+    max_data_size = datasizes.max()
+    zeroarr = np.zeros((3, 1))
+    for i, data in enumerate(numba_prop_data):
+        while data.shape[1] < max_data_size:
+            data = np.concatenate((data,zeroarr), 1)
+            numba_prop_data[i] = data        
+    numba_prop_data = np.stack(numba_prop_data) # now this is a 3D array!  
+    
     return(PROP_DATA, numba_prop_data)
 
 def initialize_RPM_polynomials(PROP_DATA):
@@ -793,6 +831,9 @@ def VocFuncBase(SOC, BattType):
     https://www.researchgate.net/publication/346515863_Comparison_of_Lithium-Ion_Battery_Pack_Models_Based_on_Test_Data_from_Idaho_and_Argonne_National_Laboratories
     Using the i3 battery pack as an intermediate value
     
+    Consider: https://mcdonaldaerospace.com/projects/batteries_not_fuel/ alternative in more depth
+    
+    
     TODO: implment battery voltage equation adjustments based on predicted health (measured via Vsoc at full charge!)
     '''
     if BattType == 'LiPo':
@@ -1165,7 +1206,7 @@ def LinePlotFunc(self, propQ = 'T',
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input = copy.deepcopy(clean_inputs)
             inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPM_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            PropQs[i, :] = SimplifiedRPMBase_Voc(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
             # TODO add speedup based on when the data starts and ends 
             # (assume it has no discontinuities in between!)
 
@@ -1179,7 +1220,7 @@ def LinePlotFunc(self, propQ = 'T',
         inner_input = copy.deepcopy(clean_inputs)
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input[idxarr] = value
-            PropQs[i, :] = SimplifiedRPM_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
+            PropQs[i, :] = SimplifiedRPMBase_t(inner_input[0], inner_input[1], inner_input[2], inner_input[3], *args)
             # todo, add speedup based on when the data starts and ends 
             # (assume it has no discontinuities in between!)
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
@@ -1241,15 +1282,29 @@ def LinePlotFunc(self, propQ = 'T',
 
 
 #%% ContourPlot
-# @njit(fastmath = True)
-# def process_2D_data_Voc():
-    
-#     return()
-
-# @njit(fastmath = True)
-# def process_2D_data_t():
-    
-#     return()
+@njit(fastmath=True)
+def process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args):
+    '''
+    mode 0: Voc or SOC (batt_grid contains Voc values)
+    mode 1: t (batt_grid contains t values)
+    '''
+    print('Code complied, running...')
+    rows, cols = Uinf_grid.shape
+    output_array = np.zeros((rows, cols, 23))
+    for i in range(rows):
+        for j in range(cols):
+            uinf = Uinf_grid[i, j]
+            dt = dT_grid[i, j]
+            rho = rho_grid[i, j]
+            b_val = batt_grid[i, j]
+            
+            if mode == 0:
+                # b_val is Voc
+                output_array[i, j, :] = SimplifiedRPM_Voc(uinf, dt, rho, b_val, *args)
+            else:
+                # b_val is t
+                output_array[i, j, :] = SimplifiedRPM_t(uinf, dt, rho, b_val, *args)
+    return output_array
 
 # can plot any two of Uinf, dT, h/rho, t/Voc/SOC
 def ContourPlotFunc(self, propQ = 'T',
@@ -1294,6 +1349,8 @@ def ContourPlotFunc(self, propQ = 'T',
         Might be confusing why input_names is in a different order compared to LinePlot. That's to provide
         better xaxis, yaxis selection by default (time on horizontal axis, altitude on vertical, etc)
     '''
+    if verbose:
+        print('ContourPlot started, compiling code')
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns, self.np, self.CB, self.Rb, self.BattType, 
@@ -1339,41 +1396,45 @@ def ContourPlotFunc(self, propQ = 'T',
     x_array = arrays[xaxis]
     y_array = arrays[yaxis]
     
+    # ALTERNATIVE WITHOUT DYNAMIC TYPING FOR SPEED
     if x_array.shape != y_array.shape:
         raise ValueError(f"Input arrays must have the same size. Got {x_array.shape} and {y_array.shape}.")
 
-    grid_size = len(x_array)
-    output_array = np.zeros((grid_size, grid_size, 23))
+    X_grid, Y_grid = np.meshgrid(x_array, y_array)
+    grid_shape = X_grid.shape 
 
-    for i, y_val in enumerate(tqdm(y_array)):
-        for j, x_val in enumerate(x_array):
-            
-            current_state = constants.copy()
-            current_state[xaxis] = x_val
-            current_state[yaxis] = y_val
-            
-            curr_Uinf = current_state['Uinf']
-            curr_dT = current_state['dT']
-            
-            if 'rho' in current_state:
-                curr_rho = current_state['rho']
-            else:
-                curr_rho = atm().rho(current_state['h'])
-                
-            # Select between Voc, SOC, t
-            if 'Voc' in current_state:
-                curr_Voc = current_state['Voc']
-                output_vector = SimplifiedRPM_Voc(curr_Uinf, curr_dT, curr_rho, curr_Voc, *args)
-            elif 'SOC' in current_state:
-                curr_Voc =  VocFuncBase(current_state['SOC'], self.BattType) 
-                output_vector = SimplifiedRPM_Voc(curr_Uinf, curr_dT, curr_rho, curr_Voc, *args)
-            else:                
-                #### t input
-                curr_t = current_state['t']
-                output_vector = SimplifiedRPM_t(curr_Uinf, curr_dT, curr_rho, curr_t, *args)
-            
-            output_array[i, j, :] = output_vector
-        
+    # map names to either a 2D varying grid or a constant 2D array
+    def get_grid(name, const_dict):
+        if xaxis == name: return X_grid
+        if yaxis == name: return Y_grid
+        return np.full(grid_shape, const_dict.get(name, 0.0), dtype=np.float64)
+
+    # 2D input grids
+    Uinf_grid = get_grid('Uinf', constants)
+    dT_grid = get_grid('dT', constants)
+
+    # Air density (rho or h input)
+    if 'rho' in provided_inputs:
+        rho_grid = get_grid('rho', constants)
+    else:
+        h_grid = get_grid('h', constants)
+        rho_grid = np.vectorize(atm().rho)(h_grid) #atm().rho(h_grid) 
+
+    # Battery state (Voc or SOC or t)
+    if 'Voc' in provided_inputs:
+        batt_grid = get_grid('Voc', constants)
+        mode = 0
+    elif 'SOC' in provided_inputs:
+        soc_grid = get_grid('SOC', constants)
+        batt_grid = VocFuncBase(soc_grid, self.BattType) 
+        mode = 0
+    else:
+        batt_grid = get_grid('t', constants)
+        mode = 1
+
+    # Numba loop
+    output_array = process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args)
+
     if plot:
         # TODO: add in Ilimit, Plimit (from motor/battery/ESC database)
         # TODO: add in T = D
@@ -1384,6 +1445,16 @@ def ContourPlotFunc(self, propQ = 'T',
             pass
         else:
             propQ = [propQ]
+        
+        X, Y = np.meshgrid(x_array, y_array)
+        
+        # Mandatory: 
+            # Ilimit from battery/motor spec sheet  (Orange)
+            # Plimit from motor spec sheet          (Red)
+            # M = 0.8 tip speed for propellers (?)  (Sky blue)
+        # optional:
+            # any propQ value
+        
     
         for propQspec in propQ:
             fig, ax = plt.subplots()
@@ -1391,7 +1462,6 @@ def ContourPlotFunc(self, propQ = 'T',
             propqidx = propQshort.index(propQspec)
             propQ_spec = output_array[:, :, propqidx]
             
-            X, Y = np.meshgrid(x_array, y_array)
             propQ_spec_alt = propQ_spec[propQ_spec > 0]    # very good for removing all the violation keys, and finding the max, but flattens the array
             lower = propQ_spec_alt.min()                    # finds the minimum Score discounting violation trips
             upper = propQ_spec.max()

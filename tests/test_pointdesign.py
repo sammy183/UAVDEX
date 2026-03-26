@@ -1,8 +1,11 @@
 import unittest
+from unittest.mock import patch, MagicMock
+import numpy as np
 
+from uavdex import _uavdex_root
 from uavdex.common import PointDesign
 from uavdex.propulsions import propQnames
-import numpy as np
+from uavdex.utils import open_csv, open_folder
 
 class TestComponentInits(unittest.TestCase):
     '''Test component initialization!'''
@@ -26,13 +29,65 @@ class TestComponentInits(unittest.TestCase):
         self.design.Prop('16x12E')
         self.design.ViewSetup()
         
-
-# #### BUILD OUT TO CHECK IF IT COULD OPEN DATABSE SHEETS WITHOUT ACTUALLY OPENING THE FILES
-# class TestDatabaseAccess(unittest.TestCase):
-#     def test_motor_sheet(self):
-#         t = PointDesign()
-#         # t.OpenMotorData()
-#         # t.OpenBatteryData()
+class TestDatabaseAccess(unittest.TestCase):
+    def test_csv_opening(self):        
+        @patch('platform.system', return_value='Windows')
+        @patch('os.startfile')
+        def test_open_csv_windows(self, mock_startfile, mock_platform):
+            test_path = 'C:\\test\\file.csv'
+            open_csv(test_path)
+            mock_startfile.assert_called_once_with(test_path)
+     
+        @patch('platform.system', return_value='Darwin')
+        @patch('subprocess.call')
+        def test_open_csv_macos(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/file.csv'
+            open_csv(test_path)
+            mock_subprocess_call.assert_called_once_with(['open', test_path])
+     
+        @patch('platform.system', return_value='Linux')
+        @patch('subprocess.call')
+        def test_open_csv_linux(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/file.txt'
+            open_csv(test_path)
+            mock_subprocess_call.assert_called_once_with(['xdg-open', test_path])
+    def test_folder_opening(self):
+        @patch('platform.system', return_value='Windows')
+        @patch('os.startfile')
+        def test_open_folder_windows(self, mock_startfile, mock_platform):
+            test_path = 'C:\\test\\'
+            open_folder(test_path)
+            mock_startfile.assert_called_once_with(test_path)
+     
+        @patch('platform.system', return_value='Darwin')
+        @patch('subprocess.call')
+        def test_open_folder_macos(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/'
+            open_folder(test_path)
+            mock_subprocess_call.assert_called_once_with(['open', test_path])
+     
+        @patch('platform.system', return_value='Linux')
+        @patch('subprocess.call')
+        def test_open_folder_linux(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/'
+            open_folder(test_path)
+            mock_subprocess_call.assert_called_once_with(['xdg-open', test_path])
+            
+    def test_data_location(self):
+        self.path_to_data = _uavdex_root / 'Databases/'
+        
+        def test_motor_data(self):
+            file_path = self.path_to_data / 'Motors.csv'
+            self.assertTrue(file_path.is_file())
+            
+        def test_battery_data(self, path_to_data):
+            file_path = self.path_to_data / 'Batteries.csv'
+            self.assertTrue(file_path.is_file())
+        
+        def test_prop_data(self, path_to_data):
+            '''apologies to people who delete the 16x10E propeller'''
+            file_path = self.path_to_data /'APCPropDatabase' / 'PER3_16x10E.dat'
+            self.assertTrue(file_path.is_file())
         
 class TestPointResult(unittest.TestCase):
     def setUp(self):
@@ -93,7 +148,7 @@ class TestLinePlot(unittest.TestCase):
         #              SOC = 1.0, 
         #              plot = True)
         
-        n = 50
+        n = 100
         plot = False
         cases = [
             {"propQ":'eta_drive',   "Uinf":np.linspace(0, 40, n), "dT":0.5, "h": 10, "SOC": 1.0, "plot":plot},
@@ -124,7 +179,7 @@ class TestContourPlot(unittest.TestCase):
         # self.design.Prop('22x12E')
     
     def test_contourplot_varients(self):
-        n = 50
+        n = 200
         plot = False
         cases = [
             {"propQ":'eta_drive', 
@@ -150,6 +205,7 @@ class TestContourPlot(unittest.TestCase):
              "h":50, 
              "dT":np.linspace(0.2, 1.0, n), 
              "plot":plot},
+            
             # {"propQ":"eta_drive",
             #  # "xaxis":"t", "yaxis":"Uinf", 
             #  "Uinf":np.linspace(0, 45, n), 
@@ -170,7 +226,7 @@ class TestContourPlot(unittest.TestCase):
         for i, case in enumerate(cases):
             with self.subTest(case=case):
                 self.design.ContourPlot(
-                    verbose=False,
+                    verbose=True,
                     **case
                 )
         
