@@ -239,8 +239,8 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 
 
 ## Future updates
-1. Ability to open databases automatically on linux and mac systems
-2. Automatic limit lines based on component power/current + propeller tip speed
+1. Automatic limit lines based on component power/current + propeller tip speed
+2. Battery resistance near low SOC modeled
 3. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
 4. Expansion of database features
 5. Functions for the best Uinf, dT, h for maximum efficiency
