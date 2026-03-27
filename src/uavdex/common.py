@@ -80,7 +80,7 @@ class PointDesign:
             print(f'{a:14} {b:14} {c:14} {d:14} {e:14} {f:14}')
 
     def ViewSetup(self):
-        print(f'Battery Specs: {self.batt_name}, {self.ns}S, {self.CB} mAh, {self.Rb} Ohm\n'
+        print(f'Battery Specs: {self.batt_name}, {self.ns_batt}S{self.np_batt}P, {self.CB} mAh, {self.Rb} Ohm\n'
               f'Motor Specs:   {self.nmot:.0f} {self.motor_name}, {self.KV} KV, I0 = {self.I0} A, {self.Rm} Ohm, Max Power = {self.Pmax} W\n')
     
     def OpenMotorData(self):
@@ -121,12 +121,13 @@ class PointDesign:
         try:
             batt_data = df.loc[df['Name'] == self.batt_name]
         except:
-            raise ValueError('Battery name not recognized; please call .BatteryOptions()')
-        self.ns = batt_data['Series Cell Count'].values[0]
-        self.np = batt_data['Parallel Cell Count'].values[0]
+            raise ValueError('Battery name not recognized; please call .BatteryOptions() or .OpenBatteryData()')
+        self.ns_batt = batt_data['Series Cell Count'].values[0]
+        self.np_batt = batt_data['Parallel Cell Count'].values[0]
         self.CB = batt_data['Capacity (mAh)'].values[0]
         self.Rb = batt_data['Resistance (Ohm)'].values[0]
         self.BattType = batt_data['Battery Type'].values[0] # string, either LiPo or Liion
+        self.Iblimit = batt_data['Max Continuous Discharge (A)'].values[0]
         self.battery = True
         # soon add weight, max continuous current, etc
         
@@ -765,7 +766,7 @@ class PointDesign:
     #     if verbose:
     #         print(f'Simulating {segment_distance/ftm:.1f} ft cruise')
     #     data = performance.Cruise(segment_distance, self.V_track[self.segment_index-1][-1], self.t_track[self.segment_index-1][-1], self.SOC_track[self.segment_index-1][-1], 
-    #                               self.x_track[self.segment_index-1][-1], self.h_track[self.segment_index-1][-1], self.eta_track[self.segment_index - 1][-1], self.CL, self.CD, self.Sw, self.rho, self.MGTOW, self.mass, self.ds, self.rpm_list, self.NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
+    #                               self.x_track[self.segment_index-1][-1], self.h_track[self.segment_index-1][-1], self.eta_track[self.segment_index - 1][-1], self.CL, self.CD, self.Sw, self.rho, self.MGTOW, self.mass, self.ds, self.rpm_list, self.NUMBA_PROP_DATA, self.CB, self.ns_batt, self.Rb, 
     #                               self.KV, self.Rm, self.nmot, self.I0, self.cruisedT, self.GR, tend = texpect, m = m)
     #     self.updatedata(data)
     #     self.labels.append('500 ft cruise')
@@ -776,7 +777,7 @@ class PointDesign:
     #     if verbose:
     #         print(f'Simulating {segment_degrees} deg turn')
     #     data = performance.Turn(segment_degrees, self.nmax,  self.V_track[self.segment_index-1][-1], self.t_track[self.segment_index-1][-1], self.SOC_track[self.segment_index-1][-1], 
-    #                               self.x_track[self.segment_index-1][-1], self.h_track[self.segment_index-1][-1], self.eta_track[self.segment_index - 1][-1], self.CLturn, self.CDturn, self.Vstall, self.Sw, self.rho, self.MGTOW, self.mass, self.ds, self.rpm_list, self.NUMBA_PROP_DATA, self.CB, self.ns, self.Rb, 
+    #                               self.x_track[self.segment_index-1][-1], self.h_track[self.segment_index-1][-1], self.eta_track[self.segment_index - 1][-1], self.CLturn, self.CDturn, self.Vstall, self.Sw, self.rho, self.MGTOW, self.mass, self.ds, self.rpm_list, self.NUMBA_PROP_DATA, self.CB, self.ns_batt, self.Rb, 
     #                               self.KV, self.Rm, self.nmot, self.I0, self.turndT, self.GR, tend = texpect, m = m)
     #     self.updatedata(data)
     #     self.labels.append('180 deg turn')

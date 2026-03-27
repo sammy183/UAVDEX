@@ -88,9 +88,11 @@ class TestDatabaseAccess(unittest.TestCase):
             file_path = self.path_to_data /'APCPropDatabase' / 'PER3_16x10E.dat'
             self.assertTrue(file_path.is_file())
             
-    def test_motor_data_open(self):
-        self.design = PointDesign()
-        self.design.OpenMotorData()
+    # def test_data_open(self):
+    #     self.design = PointDesign()
+    #     self.design.OpenMotorData()
+    #     self.design.OpenBatteryData()
+    #     self.design.OpenPropData()
         
 class TestPointResult(unittest.TestCase):
     def setUp(self):

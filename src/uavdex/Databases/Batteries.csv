@@ -1,5 +1,5 @@
 ﻿Name,Manufacturer,Capacity (mAh),Series Cell Count,Parallel Cell Count,Nominal Voltage (V),Resistance (Ohm),Energy (Wh),Max Continuous Discharge (A),Max Peak Discharge (A),Weight (g),Battery Type
-Gaoneng_8S_3300,Gaoneng,3300,8,1,29.6,0.0025,97.68,,,537,LiPo
+Gaoneng_8S_3300,Gaoneng,3300,8,1,29.6,0.0025,97.68,330,,537,LiPo
 MaxAmps_4S_5450,MaxAmps,5450,4,1,14.8,0.012,80.66,163.5,654,498,LiPo
 MaxAmps_12S_2000,MaxAmps,2000,12,1,44.4,0.036,88.8,54,200,550,LiPo
 MaxAmps_6S_4500,MaxAmps,4500,6,1,22.2,0.018,99.9,103.5,450,612,LiPo

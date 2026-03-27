@@ -1057,7 +1057,7 @@ def PointResultFunc(self, Uinf = None, dT = None,
     
     '''
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
-            self.ns, self.np, self.CB, self.Rb, self.BattType, 
+            self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
             self.KV, self.Rm, self.I0, self.nmot, self.ds)
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
@@ -1159,7 +1159,7 @@ def LinePlotFunc(self, propQ = 'T',
     '''
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
-            self.ns, self.np, self.CB, self.Rb, self.BattType, 
+            self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
             self.KV, self.Rm, self.I0, self.nmot, self.ds)
     
     if not exactly_one_defined(t, SOC, Voc):
@@ -1253,6 +1253,8 @@ def LinePlotFunc(self, propQ = 'T',
             pass
         else:
             propQ = [propQ]
+            
+        #Iblimit, Imlimit
     
         for propQspec in propQ:
             propqidx = propQshort.index(propQspec)
@@ -1353,7 +1355,7 @@ def ContourPlotFunc(self, propQ = 'T',
         print('ContourPlot started, compiling code')
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
-            self.ns, self.np, self.CB, self.Rb, self.BattType, 
+            self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
             self.KV, self.Rm, self.I0, self.nmot, self.ds)
     
     if not exactly_one_defined(t, SOC, Voc):
@@ -1467,7 +1469,8 @@ def ContourPlotFunc(self, propQ = 'T',
         
         # NOTE: rn no Imlimit in motors.csv
         # yeah that needs to change
-        
+        # voltage limit on motors based on compatable cells
+        print(self.Iblimit)
     
         for propQspec in propQ:
             fig, ax = plt.subplots()
