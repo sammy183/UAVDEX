@@ -1455,6 +1455,19 @@ def ContourPlotFunc(self, propQ = 'T',
         # optional:
             # any propQ value
         
+        # Ib, Im, Ic used for limits
+        # Iblimit from batteries.csv (use continuous)
+        # Imlimit from motors.csv
+        # Ic from generic, maybe user input?
+        # Do I want to have specific esc input in the setup? Could use Jeong model then
+        # could use generic ESC by default
+        
+        # diam from propeller data
+        # then tip speed from RPM
+        
+        # NOTE: rn no Imlimit in motors.csv
+        # yeah that needs to change
+        
     
         for propQspec in propQ:
             fig, ax = plt.subplots()

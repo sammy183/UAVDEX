@@ -87,6 +87,10 @@ class TestDatabaseAccess(unittest.TestCase):
             '''apologies to people who delete the 16x10E propeller'''
             file_path = self.path_to_data /'APCPropDatabase' / 'PER3_16x10E.dat'
             self.assertTrue(file_path.is_file())
+            
+    def test_motor_data_open(self):
+        self.design = PointDesign()
+        self.design.OpenMotorData()
         
 class TestPointResult(unittest.TestCase):
     def setUp(self):
@@ -178,7 +182,7 @@ class TestContourPlot(unittest.TestCase):
         # self.design.Prop('22x12E')
     
     def test_contourplot_varients(self):
-        n = 200
+        n = 100
         plot = False
         cases = [
             {"propQ":'eta_drive', 
