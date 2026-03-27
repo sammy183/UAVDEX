@@ -27,9 +27,11 @@ def open_csv(filename: str) -> None:
     else:                                   # Linux/Unix
         subprocess.run(['xdg-open', filepath], check=True)
 
-def open_folder(path_to_folder: str | Path) -> None:
+def open_folder(path_to_folder):
     """
     Opens the specified folder using the default system file viewer
+        if path_to_folder is str, make it a path object
+        otherwise use directly
 
     Args:
         path_to_folder: The path to the directory (as a string or Path object)

@@ -1,10 +1,9 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import numpy as np
 
 from uavdex import _uavdex_root
 from uavdex.common import PointDesign
-from uavdex.propulsions import propQnames
 from uavdex.utils import open_csv, open_folder
 
 class TestComponentInits(unittest.TestCase):
@@ -30,48 +29,48 @@ class TestComponentInits(unittest.TestCase):
         self.design.ViewSetup()
         
 class TestDatabaseAccess(unittest.TestCase):
-    # def test_csv_opening(self):        
-    #     @patch('platform.system', return_value='Windows')
-    #     @patch('os.startfile')
-    #     def test_open_csv_windows(self, mock_startfile, mock_platform):
-    #         test_path = 'C:\\test\\file.csv'
-    #         open_csv(test_path)
-    #         mock_startfile.assert_called_once_with(test_path)
+    def test_csv_opening(self):        
+        @patch('platform.system', return_value='Windows')
+        @patch('os.startfile')
+        def test_open_csv_windows(self, mock_startfile, mock_platform):
+            test_path = 'C:\\test\\file.csv'
+            open_csv(test_path)
+            mock_startfile.assert_called_once_with(test_path)
      
-    #     @patch('platform.system', return_value='Darwin')
-    #     @patch('subprocess.call')
-    #     def test_open_csv_macos(self, mock_subprocess_call, mock_platform):
-    #         test_path = '/tmp/file.csv'
-    #         open_csv(test_path)
-    #         mock_subprocess_call.assert_called_once_with(['open', test_path])
+        @patch('platform.system', return_value='Darwin')
+        @patch('subprocess.call')
+        def test_open_csv_macos(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/file.csv'
+            open_csv(test_path)
+            mock_subprocess_call.assert_called_once_with(['open', test_path])
      
-    #     @patch('platform.system', return_value='Linux')
-    #     @patch('subprocess.call')
-    #     def test_open_csv_linux(self, mock_subprocess_call, mock_platform):
-    #         test_path = '/tmp/file.txt'
-    #         open_csv(test_path)
-    #         mock_subprocess_call.assert_called_once_with(['xdg-open', test_path])
-    # def test_folder_opening(self):
-    #     @patch('platform.system', return_value='Windows')
-    #     @patch('os.startfile')
-    #     def test_open_folder_windows(self, mock_startfile, mock_platform):
-    #         test_path = 'C:\\test\\'
-    #         open_folder(test_path)
-    #         mock_startfile.assert_called_once_with(test_path)
+        @patch('platform.system', return_value='Linux')
+        @patch('subprocess.call')
+        def test_open_csv_linux(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/file.txt'
+            open_csv(test_path)
+            mock_subprocess_call.assert_called_once_with(['xdg-open', test_path])
+    def test_folder_opening(self):
+        @patch('platform.system', return_value='Windows')
+        @patch('os.startfile')
+        def test_open_folder_windows(self, mock_startfile, mock_platform):
+            test_path = 'C:\\test\\'
+            open_folder(test_path)
+            mock_startfile.assert_called_once_with(test_path)
      
-    #     @patch('platform.system', return_value='Darwin')
-    #     @patch('subprocess.call')
-    #     def test_open_folder_macos(self, mock_subprocess_call, mock_platform):
-    #         test_path = '/tmp/'
-    #         open_folder(test_path)
-    #         mock_subprocess_call.assert_called_once_with(['open', test_path])
+        @patch('platform.system', return_value='Darwin')
+        @patch('subprocess.call')
+        def test_open_folder_macos(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/'
+            open_folder(test_path)
+            mock_subprocess_call.assert_called_once_with(['open', test_path])
      
-    #     @patch('platform.system', return_value='Linux')
-    #     @patch('subprocess.call')
-    #     def test_open_folder_linux(self, mock_subprocess_call, mock_platform):
-    #         test_path = '/tmp/'
-    #         open_folder(test_path)
-    #         mock_subprocess_call.assert_called_once_with(['xdg-open', test_path])
+        @patch('platform.system', return_value='Linux')
+        @patch('subprocess.call')
+        def test_open_folder_linux(self, mock_subprocess_call, mock_platform):
+            test_path = '/tmp/'
+            open_folder(test_path)
+            mock_subprocess_call.assert_called_once_with(['xdg-open', test_path])
             
     def test_data_location(self):
         self.path_to_data = _uavdex_root / 'Databases/'
