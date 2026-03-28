@@ -24,7 +24,8 @@ dependencies = [
     "gekko",
     "pandas",
     "tqdm",
-    "numba"
+    "numba",
+    "mplcursors"
 ]
 dynamic = ["version"]
 

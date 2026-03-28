@@ -305,7 +305,11 @@ def parse_coef_propeller_data(prop_name):
     # and in each index there is [[V values], [Thrust values], [Torque values]] at the indices, 0, 1, 2
     numba_prop_data = []
     datasizes = []
+    maxJ = 0.0
     for RPM in PROP_DATA['rpm_list']:
+        specmaxJ = PROP_DATA[RPM]['J'].max()
+        if specmaxJ > maxJ:
+            maxJ = specmaxJ
         datasection = np.array([PROP_DATA[RPM]['J'], 
                                 PROP_DATA[RPM]['CT'], 
                                 PROP_DATA[RPM]['CP']])
@@ -318,9 +322,10 @@ def parse_coef_propeller_data(prop_name):
     datasizes = np.array(datasizes)
     max_data_size = datasizes.max()
     zeroarr = np.zeros((3, 1))
+    zeroarr[0, 0] = maxJ
     for i, data in enumerate(numba_prop_data):
         while data.shape[1] < max_data_size:
-            data = np.concatenate((data,zeroarr), 1)
+            data = np.concatenate((data,zeroarr), 1) # IMPORTANT, J cannot be zero or the plot gets messed up. J must be equivalent to J max!
             numba_prop_data[i] = data        
     numba_prop_data = np.stack(numba_prop_data) # now this is a 3D array!  
         
@@ -394,7 +399,7 @@ def parse_propeller_data(prop_name):
     # which prevents combination into a single np array
     datasizes = np.array(datasizes)
     max_data_size = datasizes.max()
-    zeroarr = np.zeros((3, 1))
+    zeroarr = np.zeros((3, 1)) 
     for i, data in enumerate(numba_prop_data):
         while data.shape[1] < max_data_size:
             data = np.concatenate((data,zeroarr), 1)
@@ -541,9 +546,8 @@ def CPBase(RPM, J, rpm_list, numba_prop_data):
             CPs.append(0.0)
             continue
         CPs.append(np.interp(J, data[0], data[2]))
-        
     CPs = np.array(CPs)
-    
+
     if len(closest_rpms) == 1:
         return CPs[0]
     else:
@@ -836,6 +840,9 @@ def VocFuncBase(SOC, BattType):
     
     TODO: implment battery voltage equation adjustments based on predicted health (measured via Vsoc at full charge!)
     '''
+    if SOC < 0.0: # effective error message
+        return(-1)
+    
     if BattType == 'LiPo':
         return(1.7*SOC**3 - 2.1*SOC**2 + 1.2*SOC + 3.4)
         # return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
@@ -881,7 +888,7 @@ def SimpleRPMeqsBase_t(RPM, *args):
     Vb = ns*VocFuncBase(SOC, BattType) - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
-    return(RPMcalc, J, CP, Qm, Im, Ib, Vb, Vm)
+    return([RPMcalc, J, CP, Qm, Im, Ib, Vb, SOC])
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
 def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
@@ -992,9 +999,16 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     low = rpm_list[0]
     RPM = bisectionBase(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g, *args)
     
-    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
-    if CP == 0.0:
+    # check if convergence failed
+    if RPM == -1:
+        # why could this fail?
+        # 1. J outside propeller map 
+        # 2. SOC < 1-ds, meaning Voc falls outside physical range
         return([0.0]*23)
+    
+    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
+    # if CP == 0.0:
+    #     return([0.0]*23)
         
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data)
     Ic = Ib/nmot 
@@ -1009,7 +1023,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     Pw_c = Pin_c - Pin_m
     Pw_b = Rb*(Ib**2)
 
-    eta_p = (CT*J)/CP
+    eta_p = CT*CP#(CT*J)/CP
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
     eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb)) 
@@ -1069,20 +1083,22 @@ def PointResultFunc(self, Uinf = None, dT = None,
         rho = atm().rho(h)
                 
     if t is not None: 
-        try:
-            propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
-        except:
-            print('ERROR: Infeasible input combination, try reducing runtime')
-            return(np.zeros(23))
-        if propQs[22] < 0.0:
-            print('ERROR: SOC < 0% for that runtime')
-            return(np.zeros(23))
+        propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
+        # if propQs == [-1.0]*23 --> propeller data does not cover operating condition 
+        # otherwise if propQs == [0.0]*23 --> SOC < 0 for input t 
+        # 
+        # if propQs[0] == 0.0:
+        #     raise ValueError('ERROR: Cannot produce thrust at specified condition')
     else:
         # Voc or SOC input
         if SOC is not None:
+            if SOC < 1 - self.ds:
+                raise ValueError('SOC input less than max discharge from .Battery()')
             Voc = VocFuncBase(SOC, self.BattType)
         try:
             propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
+            if propQs[0] == 0.0:
+                raise ValueError('Voc provided ')
         except:
             print('ERROR: Infeasible input combination, try reducing runtime')
             return(np.zeros(23))
