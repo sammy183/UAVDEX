@@ -11,6 +11,7 @@ import subprocess
 import platform
 import os
 from pathlib import Path
+from uavdex.VSPcontribution.atmosphere import stdatm1976, densAlt2GeomAlt 
 
 def open_csv(filename: str) -> None:
     if not os.path.exists(filename):
@@ -57,3 +58,4 @@ def open_folder(path_to_folder):
             print("xdg-open not found. Please install xdg-utils package to open csv")
         except Exception as e:
             print(f"An error occurred on Linux: {e}")
+            

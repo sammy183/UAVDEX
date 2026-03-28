@@ -81,7 +81,7 @@ class PointDesign:
 
     def ViewSetup(self):
         print(f'Battery Specs: {self.batt_name}, {self.ns_batt}S{self.np_batt}P, {self.CB} mAh, {self.Rb} Ohm\n'
-              f'Motor Specs:   {self.nmot:.0f} {self.motor_name}, {self.KV} KV, I0 = {self.I0} A, {self.Rm} Ohm, Max Power = {self.Pmax} W\n')
+              f'Motor Specs:   {self.nmot:.0f} {self.motor_name}, {self.KV} KV, I0 = {self.I0} A, {self.Rm} Ohm, Max Power = {self.Pmlimit} W\n')
     
     def OpenMotorData(self):
         '''
@@ -150,7 +150,7 @@ class PointDesign:
             self.I0 = motor_data['I0 (A)'].values[0]
             self.V_I0 = motor_data['V_I0 (V)'].values[0]
             self.Rm = motor_data['Rm (Ohm)'].values[0]
-            self.Pmax = motor_data['Pmax (W)'].values[0]
+            self.Pmlimit = motor_data['Pmax (W)'].values[0]
             self.GR = motor_data['Gear Ratio'].values[0]
             self.motor = True
         except:

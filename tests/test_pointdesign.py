@@ -191,13 +191,13 @@ class TestContourPlot(unittest.TestCase):
         # self.design.Prop('22x12E')
     
     def test_contourplot_varients(self):
-        n = 100
+        n = 200
         plot = False
         cases = [
             {"propQ":'eta_drive', 
              "xaxis":"t", "yaxis":"Uinf", 
              "Uinf":np.linspace(0, 30, n), "t": np.linspace(0, 800, n), 
-             "h":50, "dT":1.0, "plot":False},
+             "h":50, "dT":1.0, "plot":plot},
             {"propQ":'eta_drive', 
              "xaxis":"dT", "yaxis":"Uinf", 
              "Uinf":np.linspace(0, 50, n), "t":30, 
@@ -213,25 +213,24 @@ class TestContourPlot(unittest.TestCase):
             {"propQ":['T', 'eta_drive', 'Ib'],
              # "xaxis":"t", "yaxis":"Uinf", 
              "Uinf":np.linspace(0, 45, n), 
-             "t": 20, 
+             "t": np.linspace(0, 300, n), 
              "h":50, 
-             "dT":np.linspace(0.2, 1.0, n), 
-             "plot":False},
-            
-            # {"propQ":"eta_drive",
+             "dT":1.0, 
+             "plot":plot},
+            #  {"propQ":"eta_drive",
             #  # "xaxis":"t", "yaxis":"Uinf", 
             #  "Uinf":np.linspace(0, 45, n), 
             #  "Voc": np.linspace(3.5, 4.2, n), 
             #  "h":50, 
             #  "dT":1.0, 
-            #  "plot":False},
+            #  "plot":True},
             # {"propQ":"eta_drive",
             #  # "xaxis":"t", "yaxis":"Uinf", 
             #  "Uinf":30.0, 
             #  "Voc": np.linspace(3.5, 4.2, n), 
             #  "h":50, 
             #  "dT":np.linspace(0.2, 1.0, n), 
-            #  "plot":False},
+            #  "plot":True},
 
             ]
         

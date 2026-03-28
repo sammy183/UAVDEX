@@ -143,7 +143,11 @@ import mplcursors # wonderful package
 from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
-
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message="Pick support for QuadMesh"
+)
 
 lbfN = 4.44822
 ftm = 0.3048
@@ -1441,7 +1445,7 @@ def ContourPlotFunc(self, propQ = 'T',
         better xaxis, yaxis selection by default (time on horizontal axis, altitude on vertical, etc)
     '''
     if verbose:
-        print('Compiling code (~8s)')
+        print('Compiling code (~8s)...')
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
@@ -1560,19 +1564,64 @@ def ContourPlotFunc(self, propQ = 'T',
         # yeah that needs to change
         # voltage limit on motors based on compatable cells
         # print(self.Iblimit)
-    
+        
+        # key:
+        # 0  1   2       3        4      5      6      7       8    
+        # T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+        
+        #  9      10     11    12    13    14   15  16  17  18  19  20   21   22
+        # Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         for propQspec in propQ:
             fig, ax = plt.subplots()
 
             propqidx = propQshort.index(propQspec)
             propQ_spec = output_array[:, :, propqidx]
             
+            # plot propQ contourplot
             propQ_spec_alt = propQ_spec[propQ_spec > 0]    # very good for removing all the violation keys, and finding the max, but flattens the array
             lower = propQ_spec_alt.min()                    # finds the minimum Score discounting violation trips
             upper = propQ_spec.max()
             img = ax.contourf(X, Y, propQ_spec, cmap = colormap, levels = np.linspace(lower, upper, grade))
             fig.colorbar(img, ticks = np.linspace(lower, upper, 11), pad = 0.025, shrink = 1.0, spacing = 'uniform', label=f'{propQnames[propqidx]}')
         
+            # TODO: add tick marks to the limit lines!
+            inlinelabel = True
+            # Ib limit line
+            if self.Iblimit is None:
+                continue
+            else:
+                Ib = output_array[:, :, 17]
+
+                if self.Iblimit < Ib.max():
+                    Iblimitline = ax.contour(X, Y, Ib, colors = 'orange', levels = np.array([self.Iblimit]))
+                    ax.clabel(Iblimitline, inline = inlinelabel, fmt=lambda v: f'{v:.1f}A')
+                    
+            # Pm limit line
+            if self.Pmlimit is None:
+                continue
+            else:
+                Pin_m = output_array[:, :, 10]
+                if self.Pmlimit < Pin_m.max():
+                    Pmlimitline = ax.contour(X, Y, Pin_m, colors = '#cc0000', levels = np.array([self.Pmlimit]))
+                    ax.clabel(Pmlimitline, inline = inlinelabel, fmt=lambda v: f'{v:.1f}W')
+
+            # Tip Mach (Mtip) limit line
+            if h is None:
+                # TODO: get alt from rho in stdatm1976 (or specified atmosphere), then get temp from alt
+                print('Currently, cannot plot tip mach limit for rho input, please input h')
+                continue
+            else:
+                RPM = output_array[:, :, 2]
+                
+                gamma = 1.4
+                R = 286.9   # J/(kg*K)
+                a = np.sqrt(gamma*R*atm().T(h)) #TODO what if h is an array? 
+                Mtip = (RPM*self.propdiam*np.pi/60)/a
+                if Mtip.any() >= 0.8:
+                    Mtiplimitline = ax.contour(X, Y, Mtip, colors = 'xkcd:sky blue', levels = np.array([0.8]))
+                    ax.clabel(Mtiplimitline, inline = inlinelabel, fmt=lambda v: f'{v:.2f}')
+    
+
             # to get correct names: xaxis, yaxis --> input names idx --> full_input_names idx --> full_input_names value
             full_input_names = ['State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)', 
                                 'Velocity (m/s)', 'Throttle (0-1)', 
