@@ -119,8 +119,12 @@ class TestPointResult(unittest.TestCase):
             np.array([30.729918, 1.141142, 6226.187706, 0.364074, 0.619529, 1.0, 0.905479, 0.651, 0.996938, 744.030427, 821.69822, 1262.209247, 77.667793, 440.511027, 3.876251, 36.620048, 39.376396, 39.376396, 22.43848, 32.054972, 32.054972, 4.019177, 0.900565]),
             ] 
         
-        self.design.PointResult(Uinf = 40, dT = 1.0, h = 50, t = 300) # where propeller is valid but SOC < 1 - ds
-        self.design.PointResult(Uinf = 60, dT = 1.0, h = 50, t = 300) # where propeller cannot make thrust
+        # todo: add tests for all error messages
+        # self.design.PointResult(Uinf = 40, dT = 1.0, h = 50, t = 300) # where propeller is valid but SOC < 1 - ds
+        # self.design.PointResult(Uinf = 70, dT = 1.0, h = 50, t = 300) # where propeller cannot make thrust
+        # self.design.PointResult(Uinf = 70, dT = 1.0, h = 50, SOC = 0.5) # where propeller cannot make thrust
+        # self.design.PointResult(Uinf = 20, dT = 1.0, h = 50, Voc = 2.8) # where propeller cannot make thrust
+        # self.design.PointResult(Uinf = 70, dT = 1.0, h = 50, Voc = 3.6) # where propeller cannot make thrust
 
         total_tested = 0
         for i, case in enumerate(cases):

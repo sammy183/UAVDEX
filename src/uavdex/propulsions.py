@@ -689,6 +689,13 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
         eta_g = 0.94 # 94% gear efficiency assumed
     else:
         eta_g = 1.0
+    
+    # checking initial feasibility with propeller Jmax
+    Jmax = coef_numba_prop_data[:, 0, :].max()
+    RPMlowerlimit = (Uinf*60)/(Jmax*d)
+    if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+        # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
+        return([0.0]*23)
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqs_Voc(RPM, *args)[0]
@@ -766,6 +773,13 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
         eta_g = 0.94 # 94% gear efficiency assumed
     else:
         eta_g = 1.0
+        
+    # checking initial feasibility with propeller Jmax
+    Jmax = coef_numba_prop_data[:, 0, :].max()
+    RPMlowerlimit = (Uinf*60)/(Jmax*d)
+    if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+        # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
+        return([0.0]*23)
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqs_t(RPM, *args)[0]
@@ -888,7 +902,7 @@ def SimpleRPMeqsBase_t(RPM, *args):
     Vb = ns*VocFuncBase(SOC, BattType) - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
-    return([RPMcalc, J, CP, Qm, Im, Ib, Vb, SOC])
+    return([RPMcalc, J, CP, Qm, Im, Ib, Vb, Vm])
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
 def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
@@ -915,6 +929,13 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
         eta_g = 0.94 # 94% gear efficiency assumed
     else:
         eta_g = 1.0
+        
+    # checking initial feasibility with propeller Jmax
+    Jmax = coef_numba_prop_data[:, 0, :].max()
+    RPMlowerlimit = np.max([(Uinf*60)/(Jmax*d), rpm_list[0]])
+    if RPMlowerlimit > SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+        # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf or increase dT, Voc')
+        return([0.0]*23)
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqsBase_Voc(RPM, *args)[0]
@@ -924,10 +945,13 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     high = rpm_list[-1]
     low = rpm_list[0]
     RPM = bisectionBase(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
+    if RPM == -1:
+        # print('SOC < 0, cannot solve')
+        return([0.0]*23)
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
-    if CP == 0.0:
-        return([0.0]*23)
+    # if CP == 0.0:
+    #     return([0.0]*23)
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -955,6 +979,7 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
         return(VocFuncBase(SOC, BattType) - Voc)
     SOC = bisectionBase(0, 1, VocResidual)
     if SOC <= 1-ds:
+        # print('SOC < specified discharge')
         return([0.0]*23)
     
     return([T, Q, RPM, 
@@ -988,6 +1013,13 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
         eta_g = 0.94 # 94% gear efficiency assumed
     else:
         eta_g = 1.0
+        
+    # checking initial feasibility with propeller Jmax
+    Jmax = coef_numba_prop_data[:, 0, :].max()
+    RPMlowerlimit = np.max([(Uinf*60)/(Jmax*d), rpm_list[0]])
+    if RPMlowerlimit > SimpleRPMeqsBase_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+        # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
+        return([0.0]*23)
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqsBase_t(RPM, *args)[0]
@@ -999,16 +1031,19 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     low = rpm_list[0]
     RPM = bisectionBase(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g, *args)
     
-    # check if convergence failed
+    # # check if convergence failed
     if RPM == -1:
-        # why could this fail?
-        # 1. J outside propeller map 
-        # 2. SOC < 1-ds, meaning Voc falls outside physical range
+        # print('cannot solve')
+
+    #     # why could this fail?
+    #     # 1. J outside propeller map 
+    #     # 2. SOC < 1-ds, meaning Voc falls outside physical range
         return([0.0]*23)
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
-    # if CP == 0.0:
-    #     return([0.0]*23)
+    if CP == 0.0:
+        # print('CP = 0')
+        return([0.0]*23)
         
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data)
     Ic = Ib/nmot 
@@ -1023,7 +1058,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     Pw_c = Pin_c - Pin_m
     Pw_b = Rb*(Ib**2)
 
-    eta_p = CT*CP#(CT*J)/CP
+    eta_p = (CT*J)/CP
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
     eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb)) 
@@ -1037,6 +1072,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
     if SOC <= 1-ds:
+        # print('SOC < Specified Discharge')
         return([0.0]*23)
 
     Voc = VocFuncBase(SOC, BattType)
@@ -1083,23 +1119,53 @@ def PointResultFunc(self, Uinf = None, dT = None,
         rho = atm().rho(h)
                 
     if t is not None: 
+        # quick check for propeller viability
+        Jmax = self.COEF_NUMBA_PROP_DATA[:, 0, :].max()
+        RPMlowerlimit = (Uinf*60)/(Jmax*self.propdiam)
+        eta_c = 0.93
+        if self.GR != 1.0:
+            eta_g = 0.94 # 94% gear efficiency assumed
+        else:
+            eta_g = 1.0
+        if RPMlowerlimit > SimpleRPMeqsBase_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+            print('ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT')
+            return(np.zeros(23))
+            
         propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
-        # if propQs == [-1.0]*23 --> propeller data does not cover operating condition 
-        # otherwise if propQs == [0.0]*23 --> SOC < 0 for input t 
-        # 
-        # if propQs[0] == 0.0:
-        #     raise ValueError('ERROR: Cannot produce thrust at specified condition')
+        if propQs[0] == 0.0:
+            print(f'ERROR: Input t corresponds to SOC less than {(1-self.ds)*100:.0f}% from .Battery()')
+            return(np.zeros(23))
     else:
         # Voc or SOC input
         if SOC is not None:
             if SOC < 1 - self.ds:
-                raise ValueError('SOC input less than max discharge from .Battery()')
+                print(f'ERROR: SOC input less than {(1-self.ds)*100:.0f}% from .Battery()')
+                return(np.zeros(23))
             Voc = VocFuncBase(SOC, self.BattType)
-        try:
-            propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
-            if propQs[0] == 0.0:
-                raise ValueError('Voc provided ')
-        except:
+        else:
+            # voc input, check that it maps to SOC between 0-1
+            if Voc < VocFuncBase(1-self.ds, self.BattType):
+                print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC < {(1-self.ds)*100:.0f}%')
+                return(np.zeros(23))
+            elif Voc > VocFuncBase(1, self.BattType):
+                print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC > 100%')
+                return(np.zeros(23))
+            
+        # quick check for propeller viability
+        Jmax = self.COEF_NUMBA_PROP_DATA[:, 0, :].max()
+        RPMlowerlimit = (Uinf*60)/(Jmax*self.propdiam)
+        eta_c = 0.93
+        if self.GR != 1.0:
+            eta_g = 0.94 # 94% gear efficiency assumed
+        else:
+            eta_g = 1.0
+        if RPMlowerlimit > SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+            print('ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT')
+            return(np.zeros(23))
+        
+        
+        propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
+        if propQs[0] == 0.0:
             print('ERROR: Infeasible input combination, try reducing runtime')
             return(np.zeros(23))
         
