@@ -197,7 +197,7 @@ class TestContourPlot(unittest.TestCase):
             {"propQ":'eta_drive', 
              "xaxis":"t", "yaxis":"Uinf", 
              "Uinf":np.linspace(0, 30, n), "t": np.linspace(0, 800, n), 
-             "h":50, "dT":1.0, "plot":plot},
+             "h":50, "dT":1.0, "plot":False},
             {"propQ":'eta_drive', 
              "xaxis":"dT", "yaxis":"Uinf", 
              "Uinf":np.linspace(0, 50, n), "t":30, 
@@ -216,7 +216,7 @@ class TestContourPlot(unittest.TestCase):
              "t": 20, 
              "h":50, 
              "dT":np.linspace(0.2, 1.0, n), 
-             "plot":plot},
+             "plot":False},
             
             # {"propQ":"eta_drive",
             #  # "xaxis":"t", "yaxis":"Uinf", 

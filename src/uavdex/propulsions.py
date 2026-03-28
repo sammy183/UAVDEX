@@ -138,6 +138,7 @@ Significant loss of accuracy due to the constant I0 assumption compared to the o
 import numpy as np
 from numpy.polynomial import Polynomial
 import matplotlib.pyplot as plt
+import mplcursors # wonderful package
 # from tqdm import tqdm
 from numba import njit
 import copy
@@ -1346,6 +1347,12 @@ def LinePlotFunc(self, propQ = 'T',
             plt.xlabel(input_name)
             plt.ylabel(propQnames[propqidx])
             
+            c2 = mplcursors.cursor(hover = True)
+            @c2.connect("add")
+            def _(sel):
+                sel.annotation.get_bbox_patch().set(fc="white")
+                sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=1.0)
+            
             # get short names of inputs along with title string
             input_names = ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
             parts = []
@@ -1359,7 +1366,7 @@ def LinePlotFunc(self, propQ = 'T',
             plt.title(f'{input_name} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
             plt.grid()
             plt.minorticks_on()
-            plt.show()
+        plt.show()
 
     
     return(PropQs, inputarr)
@@ -1399,7 +1406,7 @@ def ContourPlotFunc(self, propQ = 'T',
                     SOC = None, Voc = None, t = None, 
                     verbose = True, plot = False,
                     colormap = 'viridis', 
-                    grade = 30):
+                    grade = 40):
     '''
     Input
     ----------------------------------------------------------------------------------------------------------
@@ -1434,7 +1441,7 @@ def ContourPlotFunc(self, propQ = 'T',
         better xaxis, yaxis selection by default (time on horizontal axis, altitude on vertical, etc)
     '''
     if verbose:
-        print('ContourPlot started, compiling code')
+        print('Compiling code (~8s)')
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
@@ -1552,7 +1559,7 @@ def ContourPlotFunc(self, propQ = 'T',
         # NOTE: rn no Imlimit in motors.csv
         # yeah that needs to change
         # voltage limit on motors based on compatable cells
-        print(self.Iblimit)
+        # print(self.Iblimit)
     
         for propQspec in propQ:
             fig, ax = plt.subplots()
@@ -1581,6 +1588,15 @@ def ContourPlotFunc(self, propQ = 'T',
             plt.xlabel(full_input_names[xname_idx])
             plt.ylabel(full_input_names[yname_idx])
             
+            # make a grid of hidden points to use with the interactive datatips
+            # dots = ax.scatter(X.flatten(), Y.flatten(), c = propQ_spec.flatten(), alpha = 0)
+            c2 = mplcursors.cursor(hover = True)
+            @c2.connect("add")
+            def _(sel):
+                sel.annotation.get_bbox_patch().set(fc="white")
+                sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=1.0)
+
+            
             # get short names of inputs along with title string
             parts = []
             for name, val in zip(input_names, full_inputs):
@@ -1592,7 +1608,7 @@ def ContourPlotFunc(self, propQ = 'T',
             title_str = ", ".join(parts)
             plt.title(f'{xaxis}, {yaxis} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
             plt.minorticks_on()
-            plt.show()
+        plt.show()
         
     
     # output array = (n, n, 23) where (:, 0, 0) corresponds to y and (0, :, :) corresponds to x
