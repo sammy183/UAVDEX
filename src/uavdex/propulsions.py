@@ -1168,7 +1168,6 @@ def PointResultFunc(self, Uinf = None, dT = None,
             print('ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT')
             return(np.zeros(23))
         
-        
         propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
         if propQs[0] == 0.0:
             print('ERROR: Infeasible input combination, try reducing runtime')

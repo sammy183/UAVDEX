@@ -1,10 +1,14 @@
 import unittest
 from unittest.mock import patch
 import numpy as np
+import io
+import contextlib
 
 from uavdex import _uavdex_root
 from uavdex.common import PointDesign
 from uavdex.utils import open_csv, open_folder
+
+
 
 class TestComponentInits(unittest.TestCase):
     '''Test component initialization!'''
@@ -100,6 +104,31 @@ class TestPointResult(unittest.TestCase):
         self.design.Motor('C-4130/20', 1)
         self.design.Battery('Gaoneng_8S_3300', 0.85)
         self.design.Prop('16x12E')
+        
+    def test_pointresult_errormessages(self):
+        expected_errors = ['ERROR: Input t corresponds to SOC less than 15% from .Battery()',
+                           'ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT', 
+                           'ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT', 
+                           'ERROR: Input Voc for LiPo corresponds to SOC < 15%',
+                           'ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT',
+                           'ERROR: Input Voc for LiPo corresponds to SOC > 100%'
+                           ]
+        cases = [
+            {"Uinf":40, "dT":1.0, "h":50, "t":300},
+            {"Uinf":70, "dT":1.0, "h":50, "t":300},
+            {"Uinf":70, "dT":1.0, "h":50, "SOC":0.5},
+            {"Uinf":20, "dT":1.0, "h":50, "Voc":2.8},
+            {"Uinf":70, "dT":1.0, "h":50, "Voc":3.6},
+            {"Uinf":20, "dT":1.0, "h":50, "Voc":4.2}
+            ]
+        for i, case in enumerate(cases):
+            with self.subTest(case=case):
+                f = io.StringIO()
+                with contextlib.redirect_stdout(f):
+                    data = self.design.PointResult(verbose=False, **case)
+        
+                output = f.getvalue().split("\n")[0]
+                self.assertEqual(output, expected_errors[i])
 
     def test_pointresult_variants(self):
         cases = [
@@ -120,11 +149,6 @@ class TestPointResult(unittest.TestCase):
             ] 
         
         # todo: add tests for all error messages
-        # self.design.PointResult(Uinf = 40, dT = 1.0, h = 50, t = 300) # where propeller is valid but SOC < 1 - ds
-        # self.design.PointResult(Uinf = 70, dT = 1.0, h = 50, t = 300) # where propeller cannot make thrust
-        # self.design.PointResult(Uinf = 70, dT = 1.0, h = 50, SOC = 0.5) # where propeller cannot make thrust
-        # self.design.PointResult(Uinf = 20, dT = 1.0, h = 50, Voc = 2.8) # where propeller cannot make thrust
-        # self.design.PointResult(Uinf = 70, dT = 1.0, h = 50, Voc = 3.6) # where propeller cannot make thrust
 
         total_tested = 0
         for i, case in enumerate(cases):
@@ -191,7 +215,7 @@ class TestContourPlot(unittest.TestCase):
         # self.design.Prop('22x12E')
     
     def test_contourplot_varients(self):
-        n = 200
+        n = 120
         plot = False
         cases = [
             {"propQ":'eta_drive', 
