@@ -7,25 +7,48 @@ Sammy N. Nassau, RPI DBF 2021-2026
 UAVDEX enables rapid determination of electric aircraft propulsion quantities (i.e. thrust or efficiency) across the entire flight envelope. It is intended primarily for students competing in design competitions such as AIAA Design/Build/Fly or SAE Aero. 
 
 The tools to thoughtfully design aircraft should be accessible to all.
+
+<p align="center">
+  <i>Example analyses using UAVDEX</i>
+</p>
+<p align="center">
+  <img src="./Examples/LinePlot_V_T.png" width="32%">
+  <img src="./Examples/LinePlot_V_eta.png" width="32%">
+  <img src="./Examples/LinePlot_V_Ib.png" width="32%">
+</p>
+
+<p align="center">
+  <img src="./Examples/ContourPlot_V_t_T.png" width="32%">
+  <img src="./Examples/ContourPlot_V_t_eta.png" width="32%">
+  <img src="./Examples/ContourPlot_V_dT_eta.png" width="32%">
+</p>
+
+<!--
 <table>
   <tr>
     <td align="center" valign="top">
-      Thrust for Velocity vs Runtime<br>
+      <img src="./Examples/LinePlot_V_T.png" width="600"><br>
+    </td>
+    <td align="center" valign="top">
+      <img src="./Examples/LinePlot_V_eta.png" width="600"><br>
+    </td>
+    <td align="center" valign="top">
+      <img src="./Examples/LinePlot_V_Ib.png" width="600"><br>
+    </td
+  </tr>
+  <tr>
+    <td align="center" valign="top">
       <img src="./Examples/ContourPlot_V_t_T.png" width="600"><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     </td>
     <td align="center" valign="top">
-      Propulsion efficiency for Velocity vs Runtime<br>
       <img src="./Examples/ContourPlot_V_t_eta.png" width="600"><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     </td>
     <td align="center" valign="top">
-      Propulsion efficiency for Velocity vs Throttle<br>
       <img src="./Examples/ContourPlot_V_dT_eta.png" width="600"><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     </td>
   </tr>
 </table>
+-->
 
 
 
@@ -33,7 +56,7 @@ For detailed theory and validation, check out my paper published here:
 
 **ADD LINK**
 
-## Installation
+# Installation
 Anaconda is recommended. In anaconda prompt with a desired environment (not base) activated, simply run:
 ```python
 pip install uavdex
@@ -47,7 +70,7 @@ Key inputs that define a single flight condition:
    * *OR* **rho**: density (kg/m<sup>3</sup>)   
 * **dT**:      throttle setting (0-1)
 * **SOC**:     battery state of charge (0-1)
-  * *OR* **Voc**: cell voltage (~3.3-4.2 for LiPo)
+  * *OR* **Voc**: cell voltage (~3.5-4.15 for LiPo)
   * *OR* **t**: runtime (s)
 
 Runtime assumes constant current. This is valid when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
