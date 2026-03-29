@@ -65,13 +65,13 @@ pip install uavdex
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
 Key inputs that define a single flight condition:
-* **Uinf**:    freestream velocity over the propeller (m/s)
-* **h**:       altitude (m)
-   * *OR* **rho**: density (kg/m<sup>3</sup>)   
-* **dT**:      throttle setting (0-1)
-* **SOC**:     battery state of charge (0-1)
+* **Uinf**:    freestream velocity over the propeller
+* **h**:       altitude 
+   * *OR* **rho**: density 
+* **dT**:      throttle setting (0-100%)
+* **SOC**:     battery state of charge (0-100%)
   * *OR* **Voc**: cell voltage (~3.5-4.15 for LiPo)
-  * *OR* **t**: runtime (s)
+  * *OR* **t**: runtime 
 
 Runtime assumes constant current. This is valid when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
@@ -112,11 +112,11 @@ design.Battery('Gaoneng_8S_3300')      # add a battery
 design.Prop('16x10E')                  # add a propeller
 
 # PointResult
-# Uinf:	velocity in m/s
-# dT: 	throttle (0-1)
-# h: 	altitude in m 
-# t: 	runtime in s
-propQs = design.PointResult(Uinf = 15, dT = 0.7, h = 50, t = 30, 
+# Uinf_mps:	velocity in m/s   (alternatively use Uinf_fps, Uinf_mph, Uinf_kmh, Uinf_kt)
+# dT: 	throttle (0-100%)
+# h_m: 	altitude in m         (alternatively use h_ft, rho_kgm3, rho_slugft3, rho_lbft3)
+# t_s: 	runtime in s          (alternatively use t_m, t_hr, SOC, Voc)
+propQs = design.PointResult(Uinf_mps = 15, dT = 0.7, h_m = 50, t_s = 30, 
                             verbose = True) # this returns propQs as an array and also prints to console. To stop printing, set verbose = False.
 ```
 which prints the following to the console:
@@ -220,7 +220,7 @@ design.Battery('Gaoneng_8S_3300') 		# add a battery
 design.Prop('16x10E') 					# add a propeller
 
 # LinePlot usage
-design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf = np.linspace(0, 50), dT = 1.0, h = 100, t = 30)
+design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf_mps = np.linspace(0, 50), dT = 1.0, h_m = 100, t_s = 30)
 ```
 <table>
 	<tr>
@@ -250,7 +250,7 @@ design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf = np.linspace(0, 50), dT = 
 
 np.linspace simply samples 50 points by default between the start and ending values. To sample 200 points and get a smoother curve, use 
 ```python
-Uinf = np.linspace(0, 50, 200)
+Uinf_mps = np.linspace(0, 50, 200)
 ```
 Alternatively, Uinf can be set to a specific value and sweeps of another quantity (dT, h/rho, or SOC/Voc/t) used.
 
@@ -274,10 +274,10 @@ n = 120
 
 # ContourPlot (sweeps of velocity and runtime)
 design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
-                   Uinf = np.linspace(0, 80, n), 
-                   t = np.linspace(0, 300, n),
+                   Uinf_mps = np.linspace(0, 80, n), 
+                   t_s = np.linspace(0, 300, n),
                    dT = 1.0, 
-                   h = 100)
+                   h_m = 100)
 ```
 <!-- the following is incredibly cooked, but it gets the plots to be large and pretty --> 
 <table>
@@ -308,10 +308,10 @@ At some constant velocity, the right side bound of the contour plot indicates th
 			<p align="center">
 				<a>Efficiency for velocity vs throttle
           <pre>design.ContourPlot(propQ = 'eta_drive',
-                  Uinf = np.linspace(0, 45, 200), 
+                  Uinf_mps = np.linspace(0, 45, 200), 
                   dT = np.linspace(0.2, 1.0, 200), 
-                  h = 50, 
-                  t = 20)</pre>
+                  h_m = 50, 
+                  t_s = 20)</pre>
         </a>
 			</p>
 			<img src="./Examples/ContourPlot_V_dT_eta.png">
@@ -320,9 +320,9 @@ At some constant velocity, the right side bound of the contour plot indicates th
 			<p align="center">
 				<a>Efficiency for velocity vs cell voltage
           <pre>design.ContourPlot(propQ = 'eta_drive',
-                  Uinf = np.linspace(0, 45, 200), 
+                  Uinf_mps = np.linspace(0, 45, 200), 
                   dT = 1.0,
-                  h = 50, 
+                  h_m = 50, 
                   Voc = np.linspace(3.5, 4.2, 200)</pre>
         </a>
 			</p>
@@ -332,9 +332,9 @@ At some constant velocity, the right side bound of the contour plot indicates th
 			<p align="center">
 				<a>Efficiency for cell voltage vs throttle
            <pre>design.ContourPlot(propQ = 'eta_drive',
-                  Uinf = 30.0,
+                  Uinf_mps = 30.0,
                   dT = np.linspace(0.2, 1.0, 200),
-                  h = 50, 
+                  h_m = 50, 
                   Voc = np.linspace(3.5, 4.2, 200)</pre>
         </a>
 			</p>
