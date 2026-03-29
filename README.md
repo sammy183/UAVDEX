@@ -1,19 +1,47 @@
 # UAV DEsign eXploration
 Sammy N. Nassau, RPI DBF 2021-2026
+## IN PROGRESS: April 2026 is the target for public release
 
 [UAVDEX Repo](https://github.com/sammy183/UAVDEX)
 
-## IN PROGRESS: April 2026 is the target for public release
+UAVDEX enables rapid determination of electric aircraft propulsion quantities (i.e. thrust or efficiency) across the entire flight envelope. It is intended primarily for students competing in design competitions such as AIAA Design/Build/Fly or SAE Aero. 
+
+The tools to thoughtfully design aircraft should be accessible to all.
+<table>
+  <tr>
+    <td align="center" valign="top">
+      Thrust for Velocity vs Runtime<br>
+      <img src="./Examples/ContourPlot_V_t_T.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="center" valign="top">
+      Propulsion efficiency for Velocity vs Runtime<br>
+      <img src="./Examples/ContourPlot_V_t_eta.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="center" valign="top">
+      Propulsion efficiency for Velocity vs Throttle<br>
+      <img src="./Examples/ContourPlot_V_dT_eta.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+  </tr>
+</table>
+
+
+
+For detailed theory and validation, check out my paper published here:
+
+**ADD LINK**
 
 ## Installation
-Anaconda is recommended. In anaconda prompt with the desired env activated, simply run:
+Anaconda is recommended. In anaconda prompt with a desired environment (not base) activated, simply run:
 ```python
 pip install uavdex
 ```
-## PointDesign
+# PointDesign
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
-Key inputs:
+Key inputs that define a single flight condition:
 * **Uinf**:    freestream velocity over the propeller (m/s)
 * **h**:       altitude (m)
    * *OR* **rho**: density (kg/m<sup>3</sup>)   
@@ -24,7 +52,7 @@ Key inputs:
 
 Runtime assumes constant current. This is valid when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
-### Component initialization
+## Component initialization
 ```python
 import uavdex as ud
 
@@ -33,16 +61,21 @@ design.Motor('C-4130/20', nmot = 2)                     # add a motor, and speci
 design.Battery('Gaoneng_8S_3300', discharge = 0.85)     # add a battery, and specify the maximum discharge (default is 0.8, aka 80%)
 design.Prop('16x10E')                                   # add a propeller
 ```
-To view the databases (editable CSV sheets) for motor and battery names, call
+To view and edit the databases use 
 ```python
-design.OpenMotorData()
-design.OpenBatteryData()
+design.OpenMotorData()      # opens an editable csv
+design.OpenBatteryData()    # opens an editable csv
+design.OpenPropellerData()  # opens a folder containing .dat files from https://www.apcprop.com/technical-information/performance-data/?v=7516fd43adaa
 ```
-and the CSV sheets will be opened by your default system viewer.
-
+Alternatively, for a list of options printed to the console:
+```python
+design.MotorOptions()
+design.BatteryOptions()
+design.PropellerOptions()
+```
 All values required are typically provided by the manufacturer, meaning users can add whatever components they desire.
 
-### PointResult
+## PointResult
 A simple function to get propulsion quantities (called 'propQ' in the code) at a specified flight condition.
 
 *PointResult example*
@@ -60,9 +93,37 @@ design.Prop('16x10E')                  # add a propeller
 # dT: 	throttle (0-1)
 # h: 	altitude in m 
 # t: 	runtime in s
-design.PointResult(Uinf = 15, dT = 0.7, h = 50, t = 30)
+propQs = design.PointResult(Uinf = 15, dT = 0.7, h = 50, t = 30, 
+                            verbose = True) # this returns propQs as an array and also prints to console. To stop printing, set verbose = False.
 ```
 which prints the following to the console:
+> ```
+> At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m^3, Runtime = 30.0 s
+> Total Thrust (N)                 = 50.254
+> Total Torque (Nm)                = 1.776
+> RPM                              = 6251.107
+> Drive Efficiency                 = 38.44%
+> Propeller Efficiency             = 64.82%
+> Gearing Efficiency               = 100.00%
+> Motor Efficiency                 = 91.52%
+> ESC Efficiency                   = 65.10%
+> Battery Efficiency               = 99.52%
+> Mech. Power Out of 1 Motor (W)   = 581.428
+> Elec. Power Into 1 Motor (W)     = 635.293
+> Elec. Power Into 1 ESC (W)       = 975.872
+> Waste Power in 1 Motor (W)       = 53.865
+> Waste Power in 1 ESC (W)         = 340.579
+> Waste Power in 1 Battery (W)     = 9.506
+> Current in 1 Motor (A)           = 28.674
+> Current in 1 ESC (A)             = 30.832
+> Current in Battery (A)           = 61.664
+> Voltage in 1 Motor (V)           = 22.156
+> Voltage in 1 ESC (V)             = 31.651
+> Battery Voltage (V)              = 31.651
+> Voltage Per Cell (V)             = 3.976
+> State of Charge                  = 84.43%
+> ```
+<!--
 > At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m<sup>3</sup>, Runtime = 30.0 s  
 > Total Thrust (N)               = 50.254  
 > Total Torque (Nm)              = 1.776  
@@ -87,18 +148,41 @@ which prints the following to the console:
 > Battery Voltage (V)            = 31.651 \
 > Voltage Per Cell (V)           = 3.976 \
 > State of Charge                = 84.43%
+-->
+propQs is an array containing the propulsion quantities listed below:
+| Index | Symbol      | Description                                      | Units |
+|------:|-------------|--------------------------------------------------|-------|
+| 0     | ```'T' ```           | Thrust                                          | N     |
+| 1     | ```'Q'```           | Torque                                           | N·m   |
+| 2     | ```'RPM'```         | Revolutions per minute (propeller)              | RPM   |
+| 3     | ```'eta_drive'```   | Propulsion drive efficiency                     | %     |
+| 4     | ```'eta_g'```       | Gearbox efficiency                              | %     |
+| 5     | ```'eta_m'```       | Motor efficiency                                | %     |
+| 6     | ```'eta_c'```       | ESC efficiency                                  | %     |
+| 7     | ```'eta_b'```       | Battery efficiency                              | %     |
+| 8     | ```'Pout'```        | Shaft/mechanical power out of 1 motor           | W     |
+| 9     | ```'Pin_m'```       | Electrical power into 1 motor                   | W     |
+| 10    | ```'Pin_c'```       | Electrical power into 1 ESC                     | W     |
+| 11    | ```'Pw_m'```        | Waste power in 1 motor                          | W     |
+| 12    | ```'Pw_c'```        | Waste power in 1 ESC                            | W     |
+| 13    | ```'Pw_b'```        | Waste power in 1 battery                        | W     |
+| 14    | ```'Im'```          | Motor current                                   | A     |
+| 15    | ```'Ic'```          | ESC current                                     | A     |
+| 16    | ```'Ib'```          | Battery current                                 | A     |
+| 17    | ```'Vm'```          | Motor voltage                                   | V     |
+| 18    | ```'Vc'```          | ESC voltage                                     | V     |
+| 19    | ```'Vb'```          | Battery voltage                                 | V     |
+| 20    | ```'Voc'```         | Cell voltage                                    | V     |
+| 21    | ```'SOC'```         | Battery state of charge                         | %     |
 
-### LinePlot
-To automate a *sweep* of any of the 4 variables, use a LinePlot.
-The propQ options (corresponding to the PointResult output) are:
-```python
-'T', 'Q', 'RPM', 'eta_drive', 'eta_p', 'eta_g', 'eta_m', 'eta_c', 'eta_b', 'Pout', 'Pin_m', 'Pin_c', 'Pw_m', 'Pw_c', 'Pw_b', 'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 'Voc', 'SOC'
-```
-which must be input as 
+## LinePlot
+To plot a *sweep* of any one of the 4 inputs (Uinf, dT, h/rho, Voc/SOC/t) with the others fixed, use a LinePlot. The output variable plotted on the y-axis will be a selected propQ from the list above.
+
+To select a propQ output, input a single variable or a list of variables as shown below
 ```python
 propQ = 'T'                       # for a single plot
 # OR
-propQ = ['T', 'eta_drive', 'Ib']  # to plot multiple propQs for the same sweep
+propQ = ['T', 'eta_drive', 'Ib']  # to create multiple plots of propQs for the same sweep
 ```
 
 *LinePlot example*
@@ -148,8 +232,8 @@ Uinf = np.linspace(0, 50, 200)
 Alternatively, Uinf can be set to a specific value and sweeps of another quantity (dT, h/rho, or SOC/Voc/t) used.
 
 
-### ContourPlot
-For sweeps of two variables, use a contour plot!
+## ContourPlot
+For sweeps of two inputs, use a contour plot!
 
 *ContourPlot example*
 ```python
@@ -239,7 +323,7 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 
 
 ## Future updates
-1. Automatic limit lines based on component power/current + propeller tip speed
+1. Automatic boundary selection (no input array needed, just specify which variable is the sweep)
 2. Battery resistance near low SOC modeled
 3. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
 4. Expansion of database features
