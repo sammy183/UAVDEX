@@ -68,7 +68,16 @@ class PointDesign:
     def BatteryOptions(self):
         df = pd.read_csv(path_to_data / 'Batteries.csv')
         print('\nBattery Options:')
-        print(df[['Name', 'Cell Count', 'Capacity (mAh)']])
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        print(df.assign(
+            Config=df['Series Cell Count'].astype(str) + 'S' +
+                   df['Parallel Cell Count'].astype(str) + 'P'
+        )
+        .rename(columns={'Max Continuous Discharge (A)': 'Max Current (A)'})
+        [['Name', 'Config', 'Max Current (A)', 'Capacity (mAh)']])
+        pd.reset_option('display.max_rows')
+        pd.reset_option('display.max_columns')
     
     def PropellerOptions(self):
         with open(path_to_data / 'APCPropDatabase/proplist.txt', 'r') as f:
