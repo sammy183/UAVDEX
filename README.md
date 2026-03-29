@@ -1,25 +1,47 @@
 # UAV DEsign eXploration
 Sammy N. Nassau, RPI DBF 2021-2026
+## IN PROGRESS: April 2026 is the target for public release
 
 [UAVDEX Repo](https://github.com/sammy183/UAVDEX)
 
-**TODO: add overview with 3 images of the sorts of plots this code can create**
+UAVDEX enables rapid determination of electric aircraft propulsion quantities (i.e. thrust or efficiency) across the entire flight envelope. It is intended primarily for students competing in design competitions such as AIAA Design/Build/Fly or SAE Aero. 
 
-For detailed background, check out my paper published here:
+The tools to thoughtfully design aircraft should be accessible to all.
+<table>
+  <tr>
+    <td align="center" valign="top">
+      Thrust for Velocity vs Runtime<br>
+      <img src="./Examples/ContourPlot_V_t_T.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="center" valign="top">
+      Propulsion efficiency for Velocity vs Runtime<br>
+      <img src="./Examples/ContourPlot_V_t_eta.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+    <td align="center" valign="top">
+      Propulsion efficiency for Velocity vs Throttle<br>
+      <img src="./Examples/ContourPlot_V_dT_eta.png" width="600"><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </td>
+  </tr>
+</table>
+
+
+
+For detailed theory and validation, check out my paper published here:
 
 **ADD LINK**
-
-## IN PROGRESS: April 2026 is the target for public release
 
 ## Installation
 Anaconda is recommended. In anaconda prompt with a desired environment (not base) activated, simply run:
 ```python
 pip install uavdex
 ```
-## PointDesign
+# PointDesign
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
-Key inputs:
+Key inputs that define a single flight condition:
 * **Uinf**:    freestream velocity over the propeller (m/s)
 * **h**:       altitude (m)
    * *OR* **rho**: density (kg/m<sup>3</sup>)   
@@ -30,7 +52,7 @@ Key inputs:
 
 Runtime assumes constant current. This is valid when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
 
-### Component initialization
+## Component initialization
 ```python
 import uavdex as ud
 
@@ -39,16 +61,21 @@ design.Motor('C-4130/20', nmot = 2)                     # add a motor, and speci
 design.Battery('Gaoneng_8S_3300', discharge = 0.85)     # add a battery, and specify the maximum discharge (default is 0.8, aka 80%)
 design.Prop('16x10E')                                   # add a propeller
 ```
-To view the databases (editable CSV sheets) for motor and battery names, call
+To view and edit the databases use 
 ```python
-design.OpenMotorData()
-design.OpenBatteryData()
+design.OpenMotorData()      # opens an editable csv
+design.OpenBatteryData()    # opens an editable csv
+design.OpenPropellerData()  # opens a folder containing .dat files from https://www.apcprop.com/technical-information/performance-data/?v=7516fd43adaa
 ```
-and the CSV sheets will be opened by your default system viewer.
-
+Alternatively, for a list of options printed to the console:
+```python
+design.MotorOptions()
+design.BatteryOptions()
+design.PropellerOptions()
+```
 All values required are typically provided by the manufacturer, meaning users can add whatever components they desire.
 
-### PointResult
+## PointResult
 A simple function to get propulsion quantities (called 'propQ' in the code) at a specified flight condition.
 
 *PointResult example*
@@ -148,10 +175,8 @@ propQs is an array containing the propulsion quantities listed below:
 | 20    | ```'Voc'```         | Cell voltage                                    | V     |
 | 21    | ```'SOC'```         | Battery state of charge                         | %     |
 
-### LinePlot
-To plot a *sweep* of any one of the 4 inputs (Uinf, dT, h/rho, Voc/SOC/t) with the others fixed, use a LinePlot.
-
-The output variable plotted on the y-axis will be a selected propQ from the list above.
+## LinePlot
+To plot a *sweep* of any one of the 4 inputs (Uinf, dT, h/rho, Voc/SOC/t) with the others fixed, use a LinePlot. The output variable plotted on the y-axis will be a selected propQ from the list above.
 
 To select a propQ output, input a single variable or a list of variables as shown below
 ```python
@@ -207,8 +232,8 @@ Uinf = np.linspace(0, 50, 200)
 Alternatively, Uinf can be set to a specific value and sweeps of another quantity (dT, h/rho, or SOC/Voc/t) used.
 
 
-### ContourPlot
-For sweeps of two variables, use a contour plot!
+## ContourPlot
+For sweeps of two inputs, use a contour plot!
 
 *ContourPlot example*
 ```python
