@@ -70,6 +70,33 @@ propQs = design.PointResult(Uinf = 15, dT = 0.7, h = 50, t = 30,
                             verbose = True) # this returns propQs as an array and also prints to console. To stop printing, set verbose = False.
 ```
 which prints the following to the console:
+> ```
+> At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m^3, Runtime = 30.0 s
+> Total Thrust (N)                 = 50.254
+> Total Torque (Nm)                = 1.776
+> RPM                              = 6251.107
+> Drive Efficiency                 = 38.44%
+> Propeller Efficiency             = 64.82%
+> Gearing Efficiency               = 100.00%
+> Motor Efficiency                 = 91.52%
+> ESC Efficiency                   = 65.10%
+> Battery Efficiency               = 99.52%
+> Mech. Power Out of 1 Motor (W)   = 581.428
+> Elec. Power Into 1 Motor (W)     = 635.293
+> Elec. Power Into 1 ESC (W)       = 975.872
+> Waste Power in 1 Motor (W)       = 53.865
+> Waste Power in 1 ESC (W)         = 340.579
+> Waste Power in 1 Battery (W)     = 9.506
+> Current in 1 Motor (A)           = 28.674
+> Current in 1 ESC (A)             = 30.832
+> Current in Battery (A)           = 61.664
+> Voltage in 1 Motor (V)           = 22.156
+> Voltage in 1 ESC (V)             = 31.651
+> Battery Voltage (V)              = 31.651
+> Voltage Per Cell (V)             = 3.976
+> State of Charge                  = 84.43%
+> ```
+<!--
 > At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m<sup>3</sup>, Runtime = 30.0 s  
 > Total Thrust (N)               = 50.254  
 > Total Torque (Nm)              = 1.776  
@@ -94,39 +121,39 @@ which prints the following to the console:
 > Battery Voltage (V)            = 31.651 \
 > Voltage Per Cell (V)           = 3.976 \
 > State of Charge                = 84.43%
-
+-->
 propQs is an array containing the propulsion quantities listed below:
 | Index | Symbol      | Description                                      | Units |
 |------:|-------------|--------------------------------------------------|-------|
-| 0     | T           | Thrust                                           | N     |
-| 1     | Q           | Torque                                           | N·m   |
-| 2     | RPM         | Revolutions per minute (propeller)              | RPM   |
-| 3     | eta_drive   | Propulsion drive efficiency                     | %     |
-| 4     | eta_g       | Gearbox efficiency                              | %     |
-| 5     | eta_m       | Motor efficiency                                | %     |
-| 6     | eta_c       | ESC efficiency                                  | %     |
-| 7     | eta_b       | Battery efficiency                              | %     |
-| 8     | Pout        | Shaft/mechanical power out of 1 motor           | W     |
-| 9     | Pin_m       | Electrical power into 1 motor                   | W     |
-| 10    | Pin_c       | Electrical power into 1 ESC                     | W     |
-| 11    | Pw_m        | Waste power in 1 motor                          | W     |
-| 12    | Pw_c        | Waste power in 1 ESC                            | W     |
-| 13    | Pw_b        | Waste power in 1 battery                        | W     |
-| 14    | Im          | Motor current                                   | A     |
-| 15    | Ic          | ESC current                                     | A     |
-| 16    | Ib          | Battery current                                 | A     |
-| 17    | Vm          | Motor voltage                                   | V     |
-| 18    | Vc          | ESC voltage                                     | V     |
-| 19    | Vb          | Battery voltage                                 | V     |
-| 20    | Voc         | Cell voltage                                    | V     |
-| 21    | SOC         | Battery state of charge                         | %     |
+| 0     | ```'T' ```           | Thrust                                          | N     |
+| 1     | ```'Q'```           | Torque                                           | N·m   |
+| 2     | ```'RPM'```         | Revolutions per minute (propeller)              | RPM   |
+| 3     | ```'eta_drive'```   | Propulsion drive efficiency                     | %     |
+| 4     | ```'eta_g'```       | Gearbox efficiency                              | %     |
+| 5     | ```'eta_m'```       | Motor efficiency                                | %     |
+| 6     | ```'eta_c'```       | ESC efficiency                                  | %     |
+| 7     | ```'eta_b'```       | Battery efficiency                              | %     |
+| 8     | ```'Pout'```        | Shaft/mechanical power out of 1 motor           | W     |
+| 9     | ```'Pin_m'```       | Electrical power into 1 motor                   | W     |
+| 10    | ```'Pin_c'```       | Electrical power into 1 ESC                     | W     |
+| 11    | ```'Pw_m'```        | Waste power in 1 motor                          | W     |
+| 12    | ```'Pw_c'```        | Waste power in 1 ESC                            | W     |
+| 13    | ```'Pw_b'```        | Waste power in 1 battery                        | W     |
+| 14    | ```'Im'```          | Motor current                                   | A     |
+| 15    | ```'Ic'```          | ESC current                                     | A     |
+| 16    | ```'Ib'```          | Battery current                                 | A     |
+| 17    | ```'Vm'```          | Motor voltage                                   | V     |
+| 18    | ```'Vc'```          | ESC voltage                                     | V     |
+| 19    | ```'Vb'```          | Battery voltage                                 | V     |
+| 20    | ```'Voc'```         | Cell voltage                                    | V     |
+| 21    | ```'SOC'```         | Battery state of charge                         | %     |
 
 ### LinePlot
 To plot a *sweep* of any one of the 4 inputs (Uinf, dT, h/rho, Voc/SOC/t) with the others fixed, use a LinePlot.
 
 The output variable plotted on the y-axis will be a selected propQ from the list above.
 
-To select a propQ output, use
+To select a propQ output, input a single variable or a list of variables as shown below
 ```python
 propQ = 'T'                       # for a single plot
 # OR
