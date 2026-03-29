@@ -12,7 +12,7 @@ For detailed background, check out my paper published here:
 ## IN PROGRESS: April 2026 is the target for public release
 
 ## Installation
-Anaconda is recommended. In anaconda prompt with the desired env (NOT BASE) activated, simply run:
+Anaconda is recommended. In anaconda prompt with a desired environment (not base) activated, simply run:
 ```python
 pip install uavdex
 ```
