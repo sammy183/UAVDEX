@@ -35,7 +35,8 @@ from uavdex import _uavdex_root
 from uavdex.performance import *
 from uavdex.propulsions import *
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
-from uavdex.utils import *
+from uavdex.VSPcontribution.units import *
+from uavdex.utils import input_conversion, check, exactly_one_defined, open_csv, open_folder
 
 ### OLD LOCAL TESTING
 # from performance import *
@@ -185,20 +186,33 @@ class PointDesign:
     ############### PROPULSION FUNCTIONS ###################
     ########################################################
     ########################################################
-    def PointResult(self, Uinf = None, dT = None, 
-                    rho = None, h = None, 
-                    SOC = None, Voc = None, t = None, 
+    def PointResult(self, Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
+                    dT = None,
+                    h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
+                    SOC = None, Voc = None, t_s = None, t_m = None, t_hr = None,
                     verbose = True):
         '''
         Input
         ----------------------------------------------------------------------------------------------------------
-            Uinf        (freestream velocity, m/s)
-            dT          (throttle, 0-1)
-            rho         (density, kg/m3) 
-                or h    (altitude, m)
-            SOC         (state of charge, 0-1) 
-                or Voc  (cell voltage, 3.3-4.2) 
-                or t    (runtime, s)
+            Uinf_mph            (freestream velocity, miles per hour)
+                or Uinf_fps     (freestream velocity, feet per second)
+                or Uinf_mps     (freestream velocity, meters per second)
+                or Uinf_kmh     (freestream velocity, kilometers per hour)
+                or Uinf_kt      (freestream velocity, knots aka nautical miles per hour)
+                
+            dT                  (throttle, 0-100%)
+            
+            h_m                 (altitude, meters)
+                or h_ft         (altitude, feet)
+                or rho_kgm3     (air density, kg/m^3)
+                or rho_slugft3  (air density, slugs/ft3)
+                or rho_lbft3    (air density, lbm/ft3)
+                
+            SOC                 (state of charge, ~20-100%) 
+                or Voc          (cell voltage, ~3.3-4.2 Volts)
+                or t_s          (runtime, seconds)
+                or t_m          (runtime, minutes)
+                or t_hr         (runtime, hours)
             
         Output
         ----------------------------------------------------------------------------------------------------------
@@ -209,15 +223,23 @@ class PointDesign:
              9      10     11    12    13    14   15  16  17  18  19  20   21   22
             Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         '''
-        def check(val, cond, name):
-            if val is None:
-                return
-            if not cond(val):
-                raise ValueError(f"{name} out of bounds: {val}")
-        check(dT,  lambda x: (x >= 0.0) & (x <= 1), "dT")
+        if exactly_one_defined(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt) == False:
+            raise ValueError("Only one velocity can be input")
+        elif exactly_one_defined(h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3) == False:
+            raise ValueError("Only one altitude/air density can be input")
+        elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
+            raise ValueError("Only one of SOC, Voc, and runtime can be input")
+        
+        
+        Uinf, dT, rho, h, t, SOC = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+                             dT,
+                             h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
+                             t_s, t_m, t_hr, SOC)
+        
+        check(dT,  lambda x: (x >= 0.0) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0.0, "rho")
         check(h,   lambda x: x >= 0.0, "h")
-        check(SOC, lambda x: (x >= 0.0) & (x <= 1), "SOC")
+        check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
         check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
         check(t,   lambda x: x >= 0.0, "t") 
             
@@ -226,15 +248,16 @@ class PointDesign:
                                verbose = verbose))
     
     def LinePlot(self, propQ = 'T', 
-                 Uinf = None, dT = None, 
-                 rho = None, h = None, 
-                 SOC = None, Voc = None, t = None, 
+                 Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
+                 dT = None,
+                 h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
+                 SOC = None, Voc = None, t_s = None, t_m = None, t_hr = None,
                  verbose = False, plot = True):
         '''
         Input
         ----------------------------------------------------------------------------------------------------------
             fix three of 
-                dT, Vinf, rho/h, t/SOC/Voc
+                Uinf, dT, rho/h, t/SOC/Voc
             for the remaining one, input a np.array of values
             
             OPTIONAL FOR PLOTTING: 
@@ -257,18 +280,23 @@ class PointDesign:
         
         then also the input 1D np array
         '''
-        # todo add bounds on ranges
+        if exactly_one_defined(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt) == False:
+            raise ValueError("Only one velocity can be input")
+        elif exactly_one_defined(h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3) == False:
+            raise ValueError("Only one altitude/air density can be input")
+        elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
+            raise ValueError("Only one of SOC, Voc, and runtime can be input")
+            
+        Uinf, dT, rho, h, t, SOC = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+                             dT,
+                             h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
+                             t_s, t_m, t_hr, SOC)
+        
         # bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
-        def check(val, cond, name):
-            if val is None:
-                return
-            arr = np.asarray(val)
-            if not np.all(cond(arr)):
-                raise ValueError(f"{name} out of bounds (see func docstring)")
-        check(dT,  lambda x: (x >= 0.0) & (x <= 1), "dT")
+        check(dT,  lambda x: (x >= 0.0) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0.0, "rho")
         check(h,   lambda x: x >= 0.0, "h")
-        check(SOC, lambda x: (x >= 0.0) & (x <= 1), "SOC")
+        check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
         check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
         check(t,   lambda x: x >= 0.0, "t") 
                 
@@ -279,9 +307,10 @@ class PointDesign:
     def ContourPlot(self, propQ = 'T',
                     xaxis = None,
                     yaxis = None,
-                    Uinf = None, dT = None, 
-                    rho = None, h = None, 
-                    SOC = None, Voc = None, t = None, 
+                    Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
+                    dT = None,
+                    h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
+                    SOC = None, Voc = None, t_s = None, t_m = None, t_hr = None,
                     verbose = True, plot = True):
         '''
         Input
@@ -294,8 +323,7 @@ class PointDesign:
             
             Optional: 
                 xaxis, yaxis for plot specified from the names:
-                    ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
-
+                ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
             
         IMPORTANT: 
             bounds on ranges: dT in (0.2, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
@@ -316,16 +344,22 @@ class PointDesign:
         
         
         '''
-        def check(val, cond, name):
-            if val is None:
-                return
-            arr = np.asarray(val)
-            if not np.all(cond(arr)):
-                raise ValueError(f"{name} out of bounds: {val}")
-        check(dT,  lambda x: (x > 0) & (x <= 1), "dT")
+        if exactly_one_defined(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt) == False:
+            raise ValueError("Only one velocity can be input")
+        elif exactly_one_defined(h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3) == False:
+            raise ValueError("Only one altitude/air density can be input")
+        elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
+            raise ValueError("Only one of SOC, Voc, and runtime can be input")
+        
+        Uinf, dT, rho, h, t, SOC = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+                             dT,
+                             h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
+                             t_s, t_m, t_hr, SOC)
+            
+        check(dT,  lambda x: (x > 0.0) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0, "rho")
         check(h,   lambda x: x >= 0, "h")
-        check(SOC, lambda x: (x >= 0) & (x <= 1), "SOC")
+        check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
         check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
         check(t,   lambda x: x >= 0, "t") 
         

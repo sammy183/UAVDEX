@@ -169,6 +169,9 @@ kts2mph = 1.0 / mph2kts
 
 kt2ms = kt2fts * fts2ms
 
+mph2ms = mi2km * km2m / (hr2s)
+
+kmh2ms = km2m / hr2s
 
 def tas2eas(tas, atmosphere, z_m):
     import numpy as np
@@ -305,6 +308,7 @@ pa2atm = 1/atm2pa
 # densities
 kgcm2slugcf = kg2slug / (m2ft ** 3.0)
 slugcf2kgcm = 1/kgcm2slugcf
+lbmcf2kgcm = lb2slug * slugcf2kgcm
 
 # volume
 l2in3 = 61.0237

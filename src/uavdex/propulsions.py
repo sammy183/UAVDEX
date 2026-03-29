@@ -143,6 +143,7 @@ import mplcursors # wonderful package
 from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+from uavdex.utils import exactly_one_defined
 import warnings
 warnings.filterwarnings(
     "ignore",
@@ -153,7 +154,7 @@ lbfN = 4.44822
 ftm = 0.3048
 MPH_TO_MPS = 0.44704  # Conversion factor: 1 mph to m/s
 
-global propQnames, propQshort
+global propQnames, propQshort, propQunit
 propQnames = ['Total Thrust (N)', 
               'Total Torque (Nm)', 
               'RPM', 
@@ -182,6 +183,29 @@ propQshort = ['T', 'Q', 'RPM',
               'Pout', 'Pin_m', 'Pin_c', 'Pw_m', 'Pw_c', 'Pw_b', 
               'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 
               'Voc', 'SOC']
+propQunit = ['N',
+             'Nm',
+             'RPM',
+             '%',
+             '%',
+             '%',
+             '%',
+             '%',
+             '%',
+             'W',
+             'W',
+             'W',
+             'W',
+             'W',
+             'W',
+             'A',
+             'A',
+             'A',
+             'V',
+             'V',
+             'V',
+             'V',
+             '%']
 
 from uavdex import _uavdex_root
 path_to_data = _uavdex_root / 'Databases/'
@@ -1091,9 +1115,6 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
 #%%################## PLOTTING FUNCTIONS ##################
 
 ################################# PointResult #################################
-def exactly_one_defined(*args) -> bool:
-    return sum(x is not None for x in args) == 1
-
 def PointResultFunc(self, Uinf = None, dT = None, 
                     rho = None, h = None, 
                     SOC = None, Voc = None, t = None, 
@@ -1400,6 +1421,25 @@ def process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args):
                 output_array[i, j, :] = SimplifiedRPM_t(uinf, dt, rho, b_val, *args)
     return output_array
 
+# supplemental function for the cursor values
+def make_cursor(artist, xname_idx, yname_idx, propQidx):
+    input_names = ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']
+    input_units = ['%', 'V', 's', 'm/s', '', 'kg/m\u00B3', 'm']
+    
+    c = mplcursors.cursor(artist)
+    @c.connect("add")
+    def _(sel):
+        sel.annotation.get_bbox_patch().set(fc="white")
+        x, y =  sel.target
+        idx =   sel.index
+        vals =  sel.artist.get_array()[idx]
+        sel.annotation.set_text(
+            f"{input_names[xname_idx]} = {x:.4g} {input_units[xname_idx]}\n"
+            f"{input_names[yname_idx]} = {y:.4g} {input_units[yname_idx]}\n"
+            f"{propQshort[propQidx]} = {vals:.4g} {propQunit[propQidx]}"
+        )
+    return c
+
 # can plot any two of Uinf, dT, h/rho, t/Voc/SOC
 def ContourPlotFunc(self, propQ = 'T',
                     xaxis = None,
@@ -1409,7 +1449,7 @@ def ContourPlotFunc(self, propQ = 'T',
                     SOC = None, Voc = None, t = None, 
                     verbose = True, plot = False,
                     colormap = 'viridis', 
-                    grade = 40):
+                    grade = 15):
     '''
     Input
     ----------------------------------------------------------------------------------------------------------
@@ -1619,7 +1659,6 @@ def ContourPlotFunc(self, propQ = 'T',
                 if Mtip.any() >= 0.8:
                     Mtiplimitline = ax.contour(X, Y, Mtip, colors = 'xkcd:sky blue', levels = np.array([0.8]))
                     ax.clabel(Mtiplimitline, inline = inlinelabel, fmt=lambda v: f'{v:.2f}')
-    
 
             # to get correct names: xaxis, yaxis --> input names idx --> full_input_names idx --> full_input_names value
             full_input_names = ['State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)', 
@@ -1637,12 +1676,27 @@ def ContourPlotFunc(self, propQ = 'T',
             plt.ylabel(full_input_names[yname_idx])
             
             # make a grid of hidden points to use with the interactive datatips
-            # dots = ax.scatter(X.flatten(), Y.flatten(), c = propQ_spec.flatten(), alpha = 0)
-            c2 = mplcursors.cursor(hover = True)
-            @c2.connect("add")
-            def _(sel):
-                sel.annotation.get_bbox_patch().set(fc="white")
-                sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=1.0)
+            dots = ax.scatter(X.flatten(), Y.flatten(), c = propQ_spec.flatten(), alpha = 0)
+            make_cursor(dots, xname_idx, yname_idx, propqidx)
+            
+            # c2 = mplcursors.cursor(pickables=dots)
+            # @c2.connect("add")
+            # def _(sel):
+            #     sel.annotation.get_bbox_patch().set(fc="white")
+                
+            #     x, y = sel.target
+            #     idx = sel.index
+            #     vals = sel.artist.get_array()[idx]
+            #     sel.annotation.set_text(
+            #         f"{input_names[xname_idx]:5} = {x:.4g}\n"
+            #         f"{input_names[yname_idx]:5} = {y:.4g}\n"
+            #         f"{val:.4g}"
+            #     )
+                
+            # @c2.connect("add")
+            # def _(sel):
+            #     sel.annotation.get_bbox_patch().set(fc="white")
+            #     # sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=1.0)
 
             
             # get short names of inputs along with title string

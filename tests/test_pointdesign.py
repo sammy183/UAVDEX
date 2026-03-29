@@ -114,12 +114,12 @@ class TestPointResult(unittest.TestCase):
                            'ERROR: Input Voc for LiPo corresponds to SOC > 100%'
                            ]
         cases = [
-            {"Uinf":40, "dT":1.0, "h":50, "t":300},
-            {"Uinf":70, "dT":1.0, "h":50, "t":300},
-            {"Uinf":70, "dT":1.0, "h":50, "SOC":0.5},
-            {"Uinf":20, "dT":1.0, "h":50, "Voc":2.8},
-            {"Uinf":70, "dT":1.0, "h":50, "Voc":3.6},
-            {"Uinf":20, "dT":1.0, "h":50, "Voc":4.2}
+            {"Uinf_mps":40, "dT":100, "h_m":50, "t_s":300},
+            {"Uinf_mps":70, "dT":100, "h_m":50, "t_m":5.0},
+            {"Uinf_mps":70, "dT":100, "h_m":50, "SOC":50},
+            {"Uinf_mps":20, "dT":100, "h_m":50, "Voc":2.8},
+            {"Uinf_mps":70, "dT":100, "h_m":50, "Voc":3.6},
+            {"Uinf_mps":20, "dT":100, "h_m":50, "Voc":4.2}
             ]
         for i, case in enumerate(cases):
             with self.subTest(case=case):
@@ -132,12 +132,12 @@ class TestPointResult(unittest.TestCase):
 
     def test_pointresult_variants(self):
         cases = [
-            {"h": 50,       "SOC": 1.0},
-            {"h": 50,       "Voc": 3.8},
-            {"h": 50,       "t": 30},
-            {"rho": 1.225,  "SOC": 1.0},
-            {"rho": 1.225,  "Voc": 3.8},
-            {"rho": 1.225,  "t": 30},
+            {"h_m": 50,       "SOC": 100},
+            {"h_m": 50,       "Voc": 3.8},
+            {"h_m": 50,       "t_s": 30},
+            {"rho_kgm3": 1.225,  "SOC": 100},
+            {"rho_kgm3": 1.225,  "Voc": 3.8},
+            {"rho_kgm3": 1.225,  "t_s": 30},
         ]
         precomputed_results = [
             np.array([33.811293, 1.233228, 6488.415003, 0.355269, 0.605261, 1.0, 0.9045, 0.651, 0.996839, 837.935371, 926.407689, 1423.053285, 88.472318, 496.645597, 4.512882, 39.512992, 42.487088, 42.487088, 23.445648, 33.493782, 33.493782, 4.2, 0.999756]),
@@ -154,8 +154,8 @@ class TestPointResult(unittest.TestCase):
         for i, case in enumerate(cases):
             with self.subTest(case=case):
                 data = self.design.PointResult(
-                    Uinf=15,
-                    dT=0.7,
+                    Uinf_mps=15,
+                    dT=70,
                     verbose=False,
                     **case
                 )
@@ -178,23 +178,23 @@ class TestLinePlot(unittest.TestCase):
     def test_lineplot_varients(self):
         # # TODO: figure out how to get the range automatically so ppl don't have to input
         # self.design.LinePlot(propQ = 'Pw_c', 
-        #              Uinf = np.linspace(0, 40, 100), 
-        #              dT = 0.5, 
+        #              Uinf_mps = np.linspace(0, 40, 100), 
+        #              dT = 50, 
         #              h = 10, 
-        #              SOC = 1.0, 
+        #              SOC = 100, 
         #              plot = True)
         
         n = 100
         plot = False
         cases = [
-            {"propQ":'eta_drive',   "Uinf":np.linspace(0, 40, n), "dT":0.5, "h": 10, "SOC": 1.0, "plot":plot},
-            {"propQ":'T',           "Uinf":np.linspace(0, 40, n), "dT":0.5, "h": 10, "SOC": 1.0, "plot":plot},
-            {"propQ":'eta_drive',   "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":plot},
-            {"propQ":'eta_drive',   "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "t": 0.0, "plot":plot}, # case for SimplifiedRPM_t
-            {"propQ":['eta_drive', 'Ib', 'T'], "Uinf":np.linspace(0, 50, n), "dT":1.0, "h":100, "t":30, "plot":plot}
-            # {"propQ":'eta_p', "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":True},
-            # {"propQ":'eta_m', "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":True},
-            # {"propQ":'eta_c', "Uinf":25, "dT":np.linspace(0.3, 1.0, n), "h": 10, "SOC": 1.0, "plot":True},
+            {"propQ":'eta_drive',   "Uinf_mps":np.linspace(0, 40, n), "dT":50, "h_m": 10, "SOC": 100, "plot":plot},
+            {"propQ":'T',           "Uinf_mps":np.linspace(0, 40, n), "dT":50, "h_m": 10, "SOC": 100, "plot":plot},
+            {"propQ":'eta_drive',   "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h_m": 10, "SOC": 100, "plot":plot},
+            {"propQ":'eta_drive',   "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h_m": 10, "t_s": 0.0, "plot":plot}, # case for SimplifiedRPM_t
+            {"propQ":['eta_drive', 'Ib', 'T'], "Uinf_mps":np.linspace(0, 50, n), "dT":100, "h_m":100, "t_s":30, "plot":plot}
+            # {"propQ":'eta_p', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h": 10, "SOC": 100, "plot":True},
+            # {"propQ":'eta_m', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h": 10, "SOC": 100, "plot":True},
+            # {"propQ":'eta_c', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h": 10, "SOC": 100, "plot":True},
         ]
         
         for i, case in enumerate(cases):
@@ -220,40 +220,40 @@ class TestContourPlot(unittest.TestCase):
         cases = [
             {"propQ":'eta_drive', 
              "xaxis":"t", "yaxis":"Uinf", 
-             "Uinf":np.linspace(0, 30, n), "t": np.linspace(0, 800, n), 
-             "h":50, "dT":1.0, "plot":plot},
+             "Uinf_mps":np.linspace(0, 30, n), "t_s": np.linspace(0, 800, n), 
+             "h_m":50, "dT":100, "plot":plot},
             {"propQ":'eta_drive', 
              "xaxis":"dT", "yaxis":"Uinf", 
-             "Uinf":np.linspace(0, 50, n), "t":30, 
-             "h":50, "dT":np.linspace(0.4, 1, n), "plot":plot},
+             "Uinf_mps":np.linspace(0, 50, n), "t_s":30, 
+             "h_m":50, "dT":np.linspace(40, 100, n), "plot":plot},
             {"propQ":'eta_drive', 
              # "xaxis":"Uinf", "yaxis":"h", 
-             "Uinf":np.linspace(0, 35, n), "t":30, 
-             "h":np.linspace(0, 30000, n), "dT":0.8, "plot":plot},
+             "Uinf_mps":np.linspace(0, 35, n), "t_s":30, 
+             "h_m":np.linspace(0, 30000, n), "dT":80, "plot":plot},
             {"propQ":'eta_drive', 
              # "xaxis":"t", "yaxis":"h", 
-             "Uinf":25, "t":np.linspace(0, 300, n), 
-             "h":np.linspace(0, 30000, n), "dT":0.8, "plot":plot},
+             "Uinf_mps":25, "t_s":np.linspace(0, 300, n), 
+             "h_m":np.linspace(0, 30000, n), "dT":80, "plot":plot},
             {"propQ":['T', 'eta_drive', 'Ib'],
              # "xaxis":"t", "yaxis":"Uinf", 
-             "Uinf":np.linspace(0, 45, n), 
-             "t": np.linspace(0, 300, n), 
-             "h":50, 
-             "dT":1.0, 
-             "plot":plot},
+             "Uinf_mps":np.linspace(0, 45, n), 
+             "t_s": np.linspace(0, 300, n), 
+             "h_m":50, 
+             "dT":100,
+             "plot":True},
             #  {"propQ":"eta_drive",
             #  # "xaxis":"t", "yaxis":"Uinf", 
-            #  "Uinf":np.linspace(0, 45, n), 
+            #  "Uinf_mps":np.linspace(0, 45, n), 
             #  "Voc": np.linspace(3.5, 4.2, n), 
             #  "h":50, 
-            #  "dT":1.0, 
+            #  "dT":100, 
             #  "plot":True},
             # {"propQ":"eta_drive",
             #  # "xaxis":"t", "yaxis":"Uinf", 
-            #  "Uinf":30.0, 
+            #  "Uinf_mps":30.0, 
             #  "Voc": np.linspace(3.5, 4.2, n), 
             #  "h":50, 
-            #  "dT":np.linspace(0.2, 1.0, n), 
+            #  "dT":np.linspace(20, 1000, n), 
             #  "plot":True},
 
             ]
