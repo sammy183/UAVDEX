@@ -3,10 +3,16 @@ Sammy N. Nassau, RPI DBF 2021-2026
 
 [UAVDEX Repo](https://github.com/sammy183/UAVDEX)
 
+**TODO: add overview with 3 images of the sorts of plots this code can create**
+
+For detailed background, check out my paper published here:
+
+**ADD LINK**
+
 ## IN PROGRESS: April 2026 is the target for public release
 
 ## Installation
-Anaconda is recommended. In anaconda prompt with the desired env activated, simply run:
+Anaconda is recommended. In anaconda prompt with the desired env (NOT BASE) activated, simply run:
 ```python
 pip install uavdex
 ```
@@ -60,7 +66,8 @@ design.Prop('16x10E')                  # add a propeller
 # dT: 	throttle (0-1)
 # h: 	altitude in m 
 # t: 	runtime in s
-design.PointResult(Uinf = 15, dT = 0.7, h = 50, t = 30)
+propQs = design.PointResult(Uinf = 15, dT = 0.7, h = 50, t = 30, 
+                            verbose = True) # this returns propQs as an array and also prints to console. To stop printing, set verbose = False.
 ```
 which prints the following to the console:
 > At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m<sup>3</sup>, Runtime = 30.0 s  
@@ -88,17 +95,42 @@ which prints the following to the console:
 > Voltage Per Cell (V)           = 3.976 \
 > State of Charge                = 84.43%
 
+propQs is an array containing the propulsion quantities listed below:
+| Index | Symbol      | Description                                      | Units |
+|------:|-------------|--------------------------------------------------|-------|
+| 0     | T           | Thrust                                           | N     |
+| 1     | Q           | Torque                                           | N·m   |
+| 2     | RPM         | Revolutions per minute (propeller)              | RPM   |
+| 3     | eta_drive   | Propulsion drive efficiency                     | %     |
+| 4     | eta_g       | Gearbox efficiency                              | %     |
+| 5     | eta_m       | Motor efficiency                                | %     |
+| 6     | eta_c       | ESC efficiency                                  | %     |
+| 7     | eta_b       | Battery efficiency                              | %     |
+| 8     | Pout        | Shaft/mechanical power out of 1 motor           | W     |
+| 9     | Pin_m       | Electrical power into 1 motor                   | W     |
+| 10    | Pin_c       | Electrical power into 1 ESC                     | W     |
+| 11    | Pw_m        | Waste power in 1 motor                          | W     |
+| 12    | Pw_c        | Waste power in 1 ESC                            | W     |
+| 13    | Pw_b        | Waste power in 1 battery                        | W     |
+| 14    | Im          | Motor current                                   | A     |
+| 15    | Ic          | ESC current                                     | A     |
+| 16    | Ib          | Battery current                                 | A     |
+| 17    | Vm          | Motor voltage                                   | V     |
+| 18    | Vc          | ESC voltage                                     | V     |
+| 19    | Vb          | Battery voltage                                 | V     |
+| 20    | Voc         | Cell voltage                                    | V     |
+| 21    | SOC         | Battery state of charge                         | %     |
+
 ### LinePlot
-To automate a *sweep* of any of the 4 variables, use a LinePlot.
-The propQ options (corresponding to the PointResult output) are:
-```python
-'T', 'Q', 'RPM', 'eta_drive', 'eta_p', 'eta_g', 'eta_m', 'eta_c', 'eta_b', 'Pout', 'Pin_m', 'Pin_c', 'Pw_m', 'Pw_c', 'Pw_b', 'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 'Voc', 'SOC'
-```
-which must be input as 
+To plot a *sweep* of any one of the 4 inputs (Uinf, dT, h/rho, Voc/SOC/t) with the others fixed, use a LinePlot.
+
+The output variable plotted on the y-axis will be a selected propQ from the list above.
+
+To select a propQ output, use
 ```python
 propQ = 'T'                       # for a single plot
 # OR
-propQ = ['T', 'eta_drive', 'Ib']  # to plot multiple propQs for the same sweep
+propQ = ['T', 'eta_drive', 'Ib']  # to create multiple plots of propQs for the same sweep
 ```
 
 *LinePlot example*
@@ -239,7 +271,7 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 
 
 ## Future updates
-1. Automatic limit lines based on component power/current + propeller tip speed
+1. Automatic boundary selection (no input array needed, just specify which variable is the sweep)
 2. Battery resistance near low SOC modeled
 3. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
 4. Expansion of database features
