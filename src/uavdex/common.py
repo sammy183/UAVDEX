@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-
 Primary Classes:
-    
     PointDesign <-- higher fidelity analyses of detailed designs
     DesignStudy <-- lowest fidelity MDAO using GEKKO
-    ClassicSizing <-- Raymer methods with added electric propulsion
-
+    ClassicSizing <-- classical aircraft sizing methods with added electric propulsion
 
 With motor, battery, propeller selected:
     Primary Inputs: 
@@ -217,11 +214,11 @@ class PointDesign:
         Output
         ----------------------------------------------------------------------------------------------------------
         np.array of propulsion quantities (propQs) with corresponding indexes
-            0  1   2       3        4      5      6      7       8    
-            T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+            0       1    2     3     4      5      6      7         8      9      10     11     12 
+            T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             
-             9      10     11    12    13    14   15  16  17  18  19  20   21   22
-            Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+             13      14     15    16     17    18  19  20  21  22  23  24   25   26
+            Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         '''
         if exactly_one_defined(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt) == False:
             raise ValueError("Only one velocity can be input")
@@ -247,7 +244,7 @@ class PointDesign:
                                SOC = SOC, Voc = Voc, t = t, 
                                verbose = verbose))
     
-    def LinePlot(self, propQ = 'T', 
+    def LinePlot(self, propQ = 'T_lbf', 
                  Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
                  dT = None,
                  h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
@@ -256,6 +253,26 @@ class PointDesign:
         '''
         Input
         ----------------------------------------------------------------------------------------------------------
+            Uinf_mph            (freestream velocity, miles per hour)
+                or Uinf_fps     (freestream velocity, feet per second)
+                or Uinf_mps     (freestream velocity, meters per second)
+                or Uinf_kmh     (freestream velocity, kilometers per hour)
+                or Uinf_kt      (freestream velocity, knots aka nautical miles per hour)
+                
+            dT                  (throttle, 0-100%)
+            
+            h_m                 (altitude, meters)
+                or h_ft         (altitude, feet)
+                or rho_kgm3     (air density, kg/m^3)
+                or rho_slugft3  (air density, slugs/ft3)
+                or rho_lbft3    (air density, lbm/ft3)
+                
+            SOC                 (state of charge, ~20-100%) 
+                or Voc          (cell voltage, ~3.3-4.2 Volts)
+                or t_s          (runtime, seconds)
+                or t_m          (runtime, minutes)
+                or t_hr         (runtime, hours)
+        
             fix three of 
                 Uinf, dT, rho/h, t/SOC/Voc
             for the remaining one, input a np.array of values
@@ -270,11 +287,11 @@ class PointDesign:
             PropQs, input array
             
         PropQs: a 2D np array with columns corresponding to
-            0  1   2       3        4      5      6      7       8    
-            T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+            0       1    2     3     4      5      6      7         8      9      10     11     12 
+            T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             
-             9      10     11    12    13    14   15  16  17  18  19  20   21   22
-            Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+             13      14     15    16     17    18  19  20  21  22  23  24   25   26
+            Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
 
         and the rows corresponding to the value of the variable input
         
@@ -304,7 +321,7 @@ class PointDesign:
                             rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
                             verbose = verbose, plot = plot))
         
-    def ContourPlot(self, propQ = 'T',
+    def ContourPlot(self, propQ = 'T_lbf',
                     xaxis = None,
                     yaxis = None,
                     Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
@@ -315,6 +332,26 @@ class PointDesign:
         '''
         Input
         ----------------------------------------------------------------------------------------------------------
+            Uinf_mph            (freestream velocity, miles per hour)
+                or Uinf_fps     (freestream velocity, feet per second)
+                or Uinf_mps     (freestream velocity, meters per second)
+                or Uinf_kmh     (freestream velocity, kilometers per hour)
+                or Uinf_kt      (freestream velocity, knots aka nautical miles per hour)
+                
+            dT                  (throttle, 0-100%)
+            
+            h_m                 (altitude, meters)
+                or h_ft         (altitude, feet)
+                or rho_kgm3     (air density, kg/m^3)
+                or rho_slugft3  (air density, slugs/ft3)
+                or rho_lbft3    (air density, lbm/ft3)
+                
+            SOC                 (state of charge, ~20-100%) 
+                or Voc          (cell voltage, ~3.3-4.2 Volts)
+                or t_s          (runtime, seconds)
+                or t_m          (runtime, minutes)
+                or t_hr         (runtime, hours)
+        
             a propulsion quantity (propQ) of interest (options given by the output array)
             
             constant values for two of: 
@@ -333,11 +370,11 @@ class PointDesign:
         ----------------------------------------------------------------------------------------------------------
             3D np array where (0, 0, :) corresponds to 
             
-            0  1   2       3        4      5      6      7       8    
-            T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+            0       1    2     3     4      5      6      7         8      9      10     11     12 
+            T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             
-             9      10     11    12    13    14   15  16  17  18  19  20   21   22
-            Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+             13      14     15    16     17    18  19  20  21  22  23  24   25   26
+            Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
             
             (0, :, 0) corresponding to the x axis input
             (:, 0, 0) corresponding to the y axis input

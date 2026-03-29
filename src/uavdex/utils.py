@@ -101,7 +101,7 @@ def input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
     elif rho_slugft3 is not None:
         rho = rho_slugft3*slugcf2kgcm 
         h = None
-        
+    
     # convert time to s and SOC% to SOC decimal
     if t_s is not None:
         t = t_s

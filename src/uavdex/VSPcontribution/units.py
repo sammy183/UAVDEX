@@ -132,6 +132,12 @@ lb2n = 4.4482216152605
 
 n2lb = 1/lb2n
 
+g2n = 0.00980665 # gram-force
+
+n2g = 1/g2n
+
+n2oz = n2lb * lb2oz
+
 # speeds
 rpm2rad_s = (1.0/m2s)*(2.0*math.pi)
 

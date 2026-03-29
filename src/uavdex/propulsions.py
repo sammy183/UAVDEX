@@ -29,8 +29,13 @@ CubicPlot function:
 for all of these functions, SOC can be provided as SOC (%), Voc (Volt), or t (s), which assumes constant current (i.e. good for aircraft in cruise)
 
 Available propQs are:
-    T (lbf)     (thrust for all motors)
-    Q (N*m)     (torque for all motors)
+    T_N         (newtons, thrust for all motors)
+    T_lbf       (pound-force, thrust for all motors)
+    T_g         (gram-force, thrust for all motors)
+    T_oz        (ounce-force, thrust for all motors)
+    
+    Q_Nm        (N*m, torque for all motors)
+    Q_lbfft     (lbf*ft, torque for all motors)
     RPM         (for a single motor/propeler)
 
 nondimensional:
@@ -143,6 +148,7 @@ import mplcursors # wonderful package
 from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
+from uavdex.VSPcontribution.units import *
 from uavdex.utils import exactly_one_defined
 import warnings
 warnings.filterwarnings(
@@ -155,8 +161,12 @@ ftm = 0.3048
 MPH_TO_MPS = 0.44704  # Conversion factor: 1 mph to m/s
 
 global propQnames, propQshort, propQunit
-propQnames = ['Total Thrust (N)', 
-              'Total Torque (Nm)', 
+propQnames = ['Total Thrust (N)',
+              'Total Thrust (lbf)',
+              'Total Thrust (g)',
+              'Total Thrust (oz)',
+              'Total Torque (N-m)',
+              'Total Torque (lbf-ft)',
               'RPM', 
               'Drive Efficiency', 
               'Propeller Efficiency', 
@@ -178,13 +188,18 @@ propQnames = ['Total Thrust (N)',
               'Battery Voltage (V)', 
               'Voltage Per Cell (V)', 
               'State of Charge']
-propQshort = ['T', 'Q', 'RPM', 
+propQshort = ['T_N', 'T_lbf', 'T_g', 'T_oz',
+              'Q_Nm', 'Q_lbfft', 'RPM', 
               'eta_drive', 'eta_p', 'eta_g', 'eta_m', 'eta_c', 'eta_b', 
               'Pout', 'Pin_m', 'Pin_c', 'Pw_m', 'Pw_c', 'Pw_b', 
               'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 
               'Voc', 'SOC']
 propQunit = ['N',
-             'Nm',
+             'lbf',
+             'g',
+             'oz',
+             'N-m',
+             'lbf-ft',
              'RPM',
              '%',
              '%',
@@ -700,10 +715,10 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     TODO: full docstring
     
     Output indexes:
-    0  1   2       3        4      5      6      7       8    
-    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+    0       1    2     3     4      5      6      7         8      9      10     11     12 
+    T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
     
-     9      10     11    12     13    14   15  16  17  18  19  20   21   22
+     13      14     15    16     17    18  19  20  21  22  23  24   25   26
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
     ##### Assume ESC efficiency = 0.93 (93%) ##### 
@@ -724,7 +739,7 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     RPMlowerlimit = (Uinf*60)/(Jmax*d)
     if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
         # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
-        return([0.0]*23)
+        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqs_Voc(RPM, *args)[0]
@@ -737,8 +752,8 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     RPM = bisection(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
-    if CP == 0.0:
-        return([0.0]*23)
+    if CP == 0.0: 
+        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -768,9 +783,14 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
         return(VocFunc(SOC, BattType) - Voc)
     SOC = bisection(0, 1, VocResidual, Voc, BattType)
     if SOC <= 1-ds:
-        return([0.0]*23)
+        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
     
-    return([T, Q, RPM, 
+    T_lbf = T*n2lb
+    T_g = T*n2g
+    T_oz = T*n2oz 
+    Q_lbfft = Q*nm2ftlb
+    
+    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
             Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
@@ -784,10 +804,10 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     t given directly
     
     Output indexes:
-    0  1   2       3        4      5      6      7       8    
-    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+    0       1    2     3     4      5      6      7         8      9      10     11     12 
+    T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
     
-     9      10     11    12     13    14   15  16  17  18  19  20   21   22
+     13      14     15    16     17    18  19  20  21  22  23  24   25   26
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
     ##### Assume ESC efficiency = 0.93 (93%) ##### 
@@ -808,7 +828,7 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     RPMlowerlimit = (Uinf*60)/(Jmax*d)
     if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
         # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
-        return([0.0]*23)
+        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqs_t(RPM, *args)[0]
@@ -822,7 +842,7 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
     if CP == 0.0:
-        return([0.0]*23)
+        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -844,13 +864,19 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
     if SOC <= 1-ds:
-        return([0.0]*23)
+        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
 
     Voc = VocFunc(SOC, BattType)
     
     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
     Q *= nmot
-    return([T, Q, RPM, 
+    
+    T_lbf = T*n2lb
+    T_g = T*n2g
+    T_oz = T*n2oz 
+    Q_lbfft = Q*nm2ftlb
+    
+    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
             Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
@@ -915,10 +941,10 @@ def SimpleRPMeqsBase_t(RPM, *args):
     rho precalculated from h and t given to calculate SOC, Voc
     
     Output indexes:
-    0  1   2       3        4      5      6      7       8    
-    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+    0       1    2     3     4      5      6      7         8      9      10     11     12 
+    T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
     
-     9      10     11    12     13    14   15  16  17  18  19  20   21   22
+     13      14     15    16     17    18  19  20  21  22  23  24   25   26
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
     t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
@@ -940,10 +966,10 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     Voc given directly or precalculated from SOC
     
     Output indexes:
-    0  1   2       3        4      5      6      7       8    
-    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+    0       1    2     3     4      5      6      7         8      9      10     11     12 
+    T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
     
-     9      10     11    12     13    14   15  16  17  18  19  20   21   22
+     13      14     15    16     17    18  19  20  21  22  23  24   25   26
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
     ##### Assume ESC efficiency = 0.93 (93%) ##### 
@@ -964,7 +990,7 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     RPMlowerlimit = np.max([(Uinf*60)/(Jmax*d), rpm_list[0]])
     if RPMlowerlimit > SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
         # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf or increase dT, Voc')
-        return([0.0]*23)
+        return([0.0]*len(propQshort))
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqsBase_Voc(RPM, *args)[0]
@@ -976,11 +1002,11 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     RPM = bisectionBase(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
     if RPM == -1:
         # print('SOC < 0, cannot solve')
-        return([0.0]*23)
+        return([0.0]*len(propQshort))
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
     # if CP == 0.0:
-    #     return([0.0]*23)
+    #     return([0.0]*len(propQshort))
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -1009,9 +1035,14 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     SOC = bisectionBase(0, 1, VocResidual)
     if SOC <= 1-ds:
         # print('SOC < specified discharge')
-        return([0.0]*23)
+        return([0.0]*len(propQshort))
     
-    return([T, Q, RPM, 
+    T_lbf = T*n2lb
+    T_g = T*n2g
+    T_oz = T*n2oz 
+    Q_lbfft = Q*nm2ftlb
+    
+    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
             Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
@@ -1024,10 +1055,10 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     t given directly
     
     Output indexes:
-    0  1   2       3        4      5      6      7       8    
-    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+    0       1    2     3     4      5      6      7         8      9      10     11     12 
+    T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
     
-     9      10     11    12     13    14   15  16  17  18  19  20   21   22
+     13      14     15    16     17    18  19  20  21  22  23  24   25   26
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
     ##### Assume ESC efficiency = 0.93 (93%) ##### 
@@ -1048,7 +1079,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     RPMlowerlimit = np.max([(Uinf*60)/(Jmax*d), rpm_list[0]])
     if RPMlowerlimit > SimpleRPMeqsBase_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
         # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
-        return([0.0]*23)
+        return([0.0]*len(propQshort))
 
     def residualfunc(RPM, *args):
         RPMcalc = SimpleRPMeqsBase_t(RPM, *args)[0]
@@ -1067,12 +1098,12 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     #     # why could this fail?
     #     # 1. J outside propeller map 
     #     # 2. SOC < 1-ds, meaning Voc falls outside physical range
-        return([0.0]*23)
+        return([0.0]*len(propQshort))
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
     if CP == 0.0:
         # print('CP = 0')
-        return([0.0]*23)
+        return([0.0]*len(propQshort))
         
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data)
     Ic = Ib/nmot 
@@ -1102,11 +1133,16 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
     if SOC <= 1-ds:
         # print('SOC < Specified Discharge')
-        return([0.0]*23)
+        return([0.0]*len(propQshort))
 
     Voc = VocFuncBase(SOC, BattType)
     
-    return([T, Q, RPM, 
+    T_lbf = T*n2lb
+    T_g = T*n2g
+    T_oz = T*n2oz 
+    Q_lbfft = Q*nm2ftlb
+    
+    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
             Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
@@ -1125,10 +1161,10 @@ def PointResultFunc(self, Uinf = None, dT = None,
     Outputs
     --------------------------------
     array of:
-    0  1   2       3        4      5      6      7       8    
-    T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+    0       1    2     3     4      5      6      7         8      9      10     11     12 
+    T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
     
-     9      10     11    12     13    14   15  16  17  18  19  20   21   22
+     13      14     15    16     17    18  19  20  21  22  23  24   25   26
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     
     '''
@@ -1155,27 +1191,27 @@ def PointResultFunc(self, Uinf = None, dT = None,
             eta_g = 1.0
         if RPMlowerlimit > SimpleRPMeqsBase_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
             print('ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT')
-            return(np.zeros(23))
+            return(np.zeros(len(propQshort)))
             
         propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
         if propQs[0] == 0.0:
             print(f'ERROR: Input t corresponds to SOC less than {(1-self.ds)*100:.0f}% from .Battery()')
-            return(np.zeros(23))
+            return(np.zeros(len(propQshort)))
     else:
         # Voc or SOC input
         if SOC is not None:
             if SOC < 1 - self.ds:
                 print(f'ERROR: SOC input less than {(1-self.ds)*100:.0f}% from .Battery()')
-                return(np.zeros(23))
+                return(np.zeros(len(propQshort)))
             Voc = VocFuncBase(SOC, self.BattType)
         else:
             # voc input, check that it maps to SOC between 0-1
             if Voc < VocFuncBase(1-self.ds, self.BattType):
                 print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC < {(1-self.ds)*100:.0f}%')
-                return(np.zeros(23))
+                return(np.zeros(len(propQshort)))
             elif Voc > VocFuncBase(1, self.BattType):
                 print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC > 100%')
-                return(np.zeros(23))
+                return(np.zeros(len(propQshort)))
             
         # quick check for propeller viability
         Jmax = self.COEF_NUMBA_PROP_DATA[:, 0, :].max()
@@ -1187,12 +1223,12 @@ def PointResultFunc(self, Uinf = None, dT = None,
             eta_g = 1.0
         if RPMlowerlimit > SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
             print('ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT')
-            return(np.zeros(23))
+            return(np.zeros(len(propQshort)))
         
         propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
         if propQs[0] == 0.0:
             print('ERROR: Infeasible input combination, try reducing runtime')
-            return(np.zeros(23))
+            return(np.zeros(len(propQshort)))
         
     if verbose:
         if t is not None:
@@ -1256,11 +1292,11 @@ def LinePlotFunc(self, propQ = 'T',
     ----------------------------------------------------------------------------------------------------------
         2D np array with columns corresponding to 
         
-        0  1   2       3        4      5      6      7       8    
-        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+        0       1    2     3     4      5      6      7         8      9      10     11     12 
+        T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
         
-         9      10     11    12    13    14   15  16  17  18  19  20   21   22
-        Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+         13      14     15    16     17    18  19  20  21  22  23  24   25   26
+        Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         
         and rows corresponding to a range of the nonconstant value
     '''
@@ -1303,13 +1339,13 @@ def LinePlotFunc(self, propQ = 'T',
     
     # collapsing indexes
     if idxarr == 3:
-        idxarr = 2 
+        idxarr = 2
     elif idxarr == 4 or idxarr == 5 or idxarr == 6:
         idxarr = 3 
 
     if t is None:
         clean_inputs = [Uinf, dT, rho, Voc] # if Voc is arr, SOC is arr and vice versa
-        PropQs = np.zeros((clean_inputs[idxarr].size, 23))
+        PropQs = np.zeros((clean_inputs[idxarr].size, len(propQshort)))
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input = copy.deepcopy(clean_inputs)
             inner_input[idxarr] = value
@@ -1323,7 +1359,7 @@ def LinePlotFunc(self, propQ = 'T',
         endidx = clean_inputs[idxarr].size
     else:
         clean_inputs = [Uinf, dT, rho, t]
-        PropQs = np.zeros((clean_inputs[idxarr].size, 23))
+        PropQs = np.zeros((clean_inputs[idxarr].size, len(propQshort)))
         inner_input = copy.deepcopy(clean_inputs)
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input[idxarr] = value
@@ -1335,7 +1371,7 @@ def LinePlotFunc(self, propQ = 'T',
             #     break
             if PropQs[i, -1] <= 1-self.ds: # minimum SOC = 10% for batteries
                 endidx = i
-                PropQs[i, :] = np.array([0.0]*23)
+                PropQs[i, :] = np.array([0.0]*len(propQshort))
         endidx = clean_inputs[idxarr].size
     inputarr = inputarr[:endidx]
     PropQs = PropQs[:endidx, :]
@@ -1392,7 +1428,6 @@ def LinePlotFunc(self, propQ = 'T',
             plt.minorticks_on()
         plt.show()
 
-    
     return(PropQs, inputarr)
 
 
@@ -1405,7 +1440,7 @@ def process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args):
     '''
     print('Code complied, running...')
     rows, cols = Uinf_grid.shape
-    output_array = np.zeros((rows, cols, 23))
+    output_array = np.zeros((rows, cols, 27)) # TODO: pass the 27 as some variable for the len of propQ
     for i in range(rows):
         for j in range(cols):
             uinf = Uinf_grid[i, j]
@@ -1441,7 +1476,7 @@ def make_cursor(artist, xname_idx, yname_idx, propQidx):
     return c
 
 # can plot any two of Uinf, dT, h/rho, t/Voc/SOC
-def ContourPlotFunc(self, propQ = 'T',
+def ContourPlotFunc(self, propQ = 'T_lbf',
                     xaxis = None,
                     yaxis = None,
                     Uinf = None, dT = None, 
@@ -1469,11 +1504,11 @@ def ContourPlotFunc(self, propQ = 'T',
     ----------------------------------------------------------------------------------------------------------
         3D np array (0, 0, :) corresponding to 
         
-        0  1   2       3        4      5      6      7       8    
-        T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+        0       1    2     3     4      5      6      7         8      9      10     11     12 
+        T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
         
-         9      10     11    12    13    14   15  16  17  18  19  20   21   22
-        Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+         13      14     15    16     17    18  19  20  21  22  23  24   25   26
+        Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         
         (0, :, 0) corresponding to the x axis input
         (:, 0, 0) corresponding to the y axis input
@@ -1605,15 +1640,17 @@ def ContourPlotFunc(self, propQ = 'T',
         # print(self.Iblimit)
         
         # key:
-        # 0  1   2       3        4      5      6      7       8    
-        # T, Q, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
+        # 0       1    2     3     4      5      6      7         8      9      10     11     12 
+        # T_N, T_lbf, T_g, T_oz, Q_Nm, Q_lbfft, RPM, eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
         
-        #  9      10     11    12    13    14   15  16  17  18  19  20   21   22
-        # Pout, Pin_m, Pin_c, Pw_m  Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
+        #  13      14     15    16     17    18  19  20  21  22  23  24   25   26
+        # Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         for propQspec in propQ:
             fig, ax = plt.subplots()
 
             propqidx = propQshort.index(propQspec)
+            print(propQnames[propqidx])
+            print(propQshort[propqidx])
             propQ_spec = output_array[:, :, propqidx]
             
             # plot propQ contourplot
@@ -1629,7 +1666,7 @@ def ContourPlotFunc(self, propQ = 'T',
             if self.Iblimit is None:
                 continue
             else:
-                Ib = output_array[:, :, 17]
+                Ib = output_array[:, :, 19]
 
                 if self.Iblimit < Ib.max():
                     Iblimitline = ax.contour(X, Y, Ib, colors = 'orange', levels = np.array([self.Iblimit]))
@@ -1639,7 +1676,7 @@ def ContourPlotFunc(self, propQ = 'T',
             if self.Pmlimit is None:
                 continue
             else:
-                Pin_m = output_array[:, :, 10]
+                Pin_m = output_array[:, :, 14]
                 if self.Pmlimit < Pin_m.max():
                     Pmlimitline = ax.contour(X, Y, Pin_m, colors = '#cc0000', levels = np.array([self.Pmlimit]))
                     ax.clabel(Pmlimitline, inline = inlinelabel, fmt=lambda v: f'{v:.1f}W')
@@ -1650,7 +1687,7 @@ def ContourPlotFunc(self, propQ = 'T',
                 print('Currently, cannot plot tip mach limit for rho input, please input h')
                 continue
             else:
-                RPM = output_array[:, :, 2]
+                RPM = output_array[:, :, 6]
                 
                 gamma = 1.4
                 R = 286.9   # J/(kg*K)
@@ -1713,6 +1750,6 @@ def ContourPlotFunc(self, propQ = 'T',
         plt.show()
         
     
-    # output array = (n, n, 23) where (:, 0, 0) corresponds to y and (0, :, :) corresponds to x
+    # output array = (n, n, len(propQshort)) where (:, 0, 0) corresponds to y and (0, :, :) corresponds to x
     # return xarr, yarr, output
     return(x_array, y_array, output_array)
