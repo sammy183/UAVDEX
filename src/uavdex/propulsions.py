@@ -148,8 +148,8 @@ import mplcursors # wonderful package
 from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
-from uavdex.VSPcontribution.units import *
-from uavdex.utils import exactly_one_defined, reverse_input_conversion
+from uavdex.VSPcontribution.units import n2lb, mph2ms, n2g, n2oz, nm2ftlb
+from uavdex.utils import exactly_one_defined, reverse_input_conversion, get_array_idx, get_const_idx_vals
 import warnings
 warnings.filterwarnings(
     "ignore",
@@ -1259,6 +1259,11 @@ def PointResultFunc(self, Uinf = None, dT = None,
             return(np.zeros(len(propQshort)))
         
     if verbose:
+        # TODO: automate this, so it matches units and names with self.unit_idxs!
+        # TODO
+        # TODO
+        # TODO
+        # TODO
         if t is not None:
             print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Runtime = {t:.1f} s')
         elif SOC is not None and SOC > 0.0:
@@ -1267,13 +1272,6 @@ def PointResultFunc(self, Uinf = None, dT = None,
             print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Voc = {Voc:.2f} V')
 
         for i, name in enumerate(propQnames):
-            # if name == 'Total Thrust (lbf)':
-            #     print(f'{name:30} = {propQs[i]/lbfN:.3f}')
-            # if 'Efficiency' in name:
-            #     print(f'{name:30} = {propQs[i]:.2f}%')
-            # elif 'State of Charge' in name:
-            #     print(f'{name:30} = {propQs[i]*100:.2f}%')
-            # else:
             print(f'{name:30} = {propQs[i]:.3f}')
     return(np.array(propQs))
 
@@ -1303,16 +1301,15 @@ def PointResultFunc(self, Uinf = None, dT = None,
 # supplemental function for the cursor values
 def make_cursor_lineplot(artist, xname_idx, propQidx):
     
-    c = mplcursors.cursor(artist, hover = True)
+    c = mplcursors.cursor(artist)
     @c.connect("add")
     def _(sel):
         sel.annotation.get_bbox_patch().set(fc="white")
-        x, y =     sel.target
-        idx =   sel.index
-        vals =  sel.artist.get_array()[idx]
+        x, y =  sel.target
+        # idx =   sel.index
         sel.annotation.set_text(
             f"{FullInputNamesShort[xname_idx]} = {x:.4g} {FullInputUnits[xname_idx]}\n"
-            f"{propQshort[propQidx]} = {vals:.4g} {propQunit[propQidx]}"
+            f"{propQshort[propQidx]} = {y:.4g} {propQunit[propQidx]}"
         )
     return c
 
@@ -1357,9 +1354,6 @@ def LinePlotFunc(self, propQ = 'T',
     
     # Find the np array and the constants to use
     full_inputs = [Uinf, dT, rho, h, SOC, Voc, t]
-    full_input_names = ['Velocity (m/s)', 'Throttle (0-1)', 
-                        'Density (kg/m\u00B3)', 'Altitude (m)', 
-                        'State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)']
     
     arrs = 0
     idxarr = 0
@@ -1370,8 +1364,6 @@ def LinePlotFunc(self, propQ = 'T',
             inputarr = specinput
     if arrs != 1:
         raise KeyError("Exactly one array of inputs must be provided")
-    
-    input_name = full_input_names[idxarr]
     
     # convert h to density
     if h is not None:
@@ -1399,7 +1391,7 @@ def LinePlotFunc(self, propQ = 'T',
 
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
             #     endidx = i 
-            #     break
+            #     break 
         endidx = clean_inputs[idxarr].size
     else:
         clean_inputs = [Uinf, dT, rho, t]
@@ -1422,6 +1414,23 @@ def LinePlotFunc(self, propQ = 'T',
     inputarr = inputarr[:endidx]
     PropQs = PropQs[:endidx, :]
     
+    ## IMPORTANT: full_inputs does not posses Voc, rho calculated by SOC, h respectively
+    # I apologize to future viewers of this atrocious code; rushing the unit conversions was a necessary evil
+    Uinf =  full_inputs[0]
+    dT =    full_inputs[1]
+    rho =   full_inputs[2]
+    h =     full_inputs[3]
+    SOC =   full_inputs[4]
+    Voc =   full_inputs[5]
+    t =     full_inputs[6]
+    SOC, Voc, t, Uinf, dT, rho, h = reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+    inputs_reverted = [SOC, Voc, t, Uinf, dT, rho, h]
+    xname_idx = get_array_idx(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+    for item in inputs_reverted:
+        if isinstance(item, np.ndarray):
+            inputarr = item
+    const_idxs, const_vals = get_const_idx_vals(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+    
     if plot:
         # primary goal: plot the inputarray on the x-axis versus a selected propQ on the yaxis
         # secondary goal: if some aircraft characteristics (Cd, Sw) have been provided, plot the T = D over the selected propQ
@@ -1433,7 +1442,6 @@ def LinePlotFunc(self, propQ = 'T',
         # would prefer to get the code to determine the bounds automatically and raise errors
         #   if the range is extremely limited
         
-        # TODO: add in Ilimit, Plimit (from motor/battery/ESC database)
         # TODO: add in T = D
         # TODO: limit plot (or data gathering range automatically 
         # so ppl don't have to input values 
@@ -1449,31 +1457,57 @@ def LinePlotFunc(self, propQ = 'T',
     
             fig, ax = plt.subplots(figsize = (6, 4))
             lines = ax.plot(inputarr, PropQs[:, propqidx], color = 'k')
-            plt.xlabel(input_name)
+            plt.xlabel(FullInputNames[xname_idx])
             plt.ylabel(propQnames[propqidx])
             
-            xname_idx = 0 # TODO: automate this
+            # TODO: add tick marks to the limit lines!
+            # Ib limit line
+            if self.Iblimit is None:
+                continue
+            else:
+                Ib = PropQs[:, 21]
+                if self.Iblimit < Ib.max():
+                    ax.axvline(inputarr[np.argmin(np.abs(Ib-self.Iblimit))], color = 'orange', label = f'{self.Iblimit:.4g}A')
+
+            # Pm limit line
+            if self.Pmlimit is None:
+                continue
+            else:
+                Pin_m = PropQs[:, 14]
+                if self.Pmlimit < Pin_m.max():
+                    ax.axvline(inputarr[np.argmin(np.abs(Pin_m-self.Pmlimit))], color = '#cc0000', label = f'{self.Pmlimit:.4g}W')
+            
+            # Tip Mach (Mtip) limit line
+            if h is None:
+                # TODO: get alt from rho in stdatm1976 (or specified atmosphere), then get temp from alt
+                print('Currently, cannot plot tip mach limit for rho input, please input h')
+                continue
+            else:
+                RPM = PropQs[:, 6]
+                
+                gamma = 1.4
+                R = 286.9   # J/(kg*K)
+                a = np.sqrt(gamma*R*atm().T(h)) #TODO allow Mtip conversion for when h is arr
+                Mtip = (RPM*self.propdiam*np.pi/60)/a
+                if Mtip.any() >= 0.8:
+                    ax.axvline(inputarr[np.argmin(np.abs(Mtip-0.8))], color = 'xkcd:sky blue', label = '0.8 Mtip')
+            
+            # cursor for datatips
             make_cursor_lineplot(lines, xname_idx, propqidx)
             
-            # get short names of inputs along with title string
-            input_names = ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
-            
-            # todo: automate title and units
             parts = []
-            for name, val in zip(input_names, full_inputs):
-                if val is None:
-                    continue
-                if isinstance(val, np.ndarray):
-                    continue  # skip arrays
-                parts.append(f"{name} = {val}")
+            validx = 0
+            for idx in const_idxs:
+                parts.append(f"{FullInputNamesShort[idx]} = {const_vals[validx]:.4g} {FullInputUnits[idx]}")
+                validx += 1
             title_str = ", ".join(parts)
-            plt.title(f'{input_name} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+            plt.title(f'{FullInputNames[xname_idx]} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
             plt.grid()
+            plt.legend()
             plt.minorticks_on()
         plt.show()
-
+        
     return(PropQs, inputarr)
-
 
 #%% ContourPlot
 @njit(fastmath=True)
@@ -1670,7 +1704,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
             specidx += 1
     xaxis, yaxis = list(arrays)
     x_array = arrays[xaxis]
-    y_array = arrays[yaxis]    
+    y_array = arrays[yaxis]
     
     xname_idx = fullname_idxs[0]
     yname_idx = fullname_idxs[1]

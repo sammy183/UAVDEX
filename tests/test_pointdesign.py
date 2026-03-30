@@ -195,24 +195,25 @@ class TestLinePlot(unittest.TestCase):
     
     def test_lineplot_varients(self):
         # # TODO: figure out how to get the range automatically so ppl don't have to input
-        # self.design.LinePlot(propQ = 'Pw_c', 
-        #              Uinf_mps = np.linspace(0, 40, 100), 
-        #              dT = 50, 
-        #              h = 10, 
-        #              SOC = 100, 
+        # self.design.LinePlot(propQ = 'eta_drive', 
+        #              Uinf_mph = np.linspace(0, 100, 100), 
+        #              dT = 100, 
+        #              h_m = 10, 
+        #              SOC = 30, 
         #              plot = True)
         
+        # TODO: add rigorous varients, i.e. all unit combinations and validate that they're the same
         n = 100
         plot = False
         cases = [
             {"propQ":'eta_drive',   "Uinf_mps":np.linspace(0, 40, n), "dT":50, "h_m": 10, "SOC": 100, "plot":plot},
-            {"propQ":'T',           "Uinf_mps":np.linspace(0, 40, n), "dT":50, "h_m": 10, "SOC": 100, "plot":plot},
+            {"propQ":'T_lbf',           "Uinf_mps":np.linspace(0, 40, n), "dT":50, "h_m": 10, "SOC": 100, "plot":plot},
             {"propQ":'eta_drive',   "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h_m": 10, "SOC": 100, "plot":plot},
             {"propQ":'eta_drive',   "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h_m": 10, "t_s": 0.0, "plot":plot}, # case for SimplifiedRPM_t
-            {"propQ":['eta_drive', 'Ib', 'T'], "Uinf_mps":np.linspace(0, 50, n), "dT":100, "h_m":100, "t_s":30, "plot":plot}
-            # {"propQ":'eta_p', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h": 10, "SOC": 100, "plot":True},
-            # {"propQ":'eta_m', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h": 10, "SOC": 100, "plot":True},
-            # {"propQ":'eta_c', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h": 10, "SOC": 100, "plot":True},
+            # {"propQ":['eta_drive', 'Ib', 'T_lbf'], "Uinf_mps":np.linspace(0, 50, n), "dT":100, "h_m":100, "t_s":30, "plot":plot},
+            # {"propQ":'eta_p', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h_ft": 50, "SOC": 80, "plot":plot},
+            # {"propQ":'eta_m', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h_ft": 50, "SOC": 80, "plot":plot},
+            # {"propQ":'eta_c', "Uinf_mps":25, "dT":np.linspace(30, 100, n), "h_ft": 50, "SOC": 80, "plot":plot},
         ]
         
         for i, case in enumerate(cases):

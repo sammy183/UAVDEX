@@ -200,6 +200,33 @@ def reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, unitconv_idx):
     
     return(SOC, Voc, t, Uinf, dT, rho, h)
 
+def get_array_idx(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
+    '''
+    To recover unit idx for plot titles and tooltips
+    This only functions when Voc/rho calculated via SOC/h aren't used
+    '''
+    spec = SOC if SOC is not None else (Voc if Voc is not None else t)
+    rhoh = rho if rho is not None else h
+    vars_ordered = [spec, Uinf, dT, rhoh]
+    for i, v in enumerate(vars_ordered):
+        if isinstance(v, np.ndarray):
+            return unit_idxs[i]
+    return None
+
+def get_const_idx_vals(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
+    '''To recover unit idx for plot titles and tooltips'''
+    spec = SOC if SOC is not None else (Voc if Voc is not None else t)
+    rhoh = rho if rho is not None else h
+
+    outs = []
+    vals = []
+    vars_ordered = [spec, Uinf, dT, rhoh]
+    for i, v in enumerate(vars_ordered):
+        if isinstance(v, float) or isinstance(v, int):
+            outs.append(unit_idxs[i])
+            vals.append(v)
+    return outs, vals
+
 def check(val, cond, name):
     '''for checking whether inputs are within range'''
     if val is None:
