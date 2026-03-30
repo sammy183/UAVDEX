@@ -143,18 +143,18 @@ Significant loss of accuracy due to the constant I0 assumption compared to the o
 import numpy as np
 from numpy.polynomial import Polynomial
 import matplotlib.pyplot as plt
+from matplotlib import patheffects
 import mplcursors # wonderful package
 # from tqdm import tqdm
 from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
 from uavdex.VSPcontribution.units import n2lb, mph2ms, n2g, n2oz, nm2ftlb
-from uavdex.utils import exactly_one_defined, reverse_input_conversion, get_array_idx, get_const_idx_vals
+from uavdex.utils import exactly_one_defined, reverse_input_conversion, get_array_idx, get_const_idx, find_intersections, get_const_vals
 import warnings
-warnings.filterwarnings(
-    "ignore",
-    message="Pick support for QuadMesh"
-)
+warnings.filterwarnings("ignore", message="Pick support for QuadMesh")
+warnings.filterwarnings("ignore", message="No artists with labels found to put in legend")
+
 
 global propQnames, propQshort, propQunit, FullInputNames, FullInputNamesShort, FullInputUnits
 propQnames = ['Total Thrust (N)',
@@ -1354,7 +1354,10 @@ def LinePlotFunc(self, propQ = 'T',
     
     # Find the np array and the constants to use
     full_inputs = [Uinf, dT, rho, h, SOC, Voc, t]
-    
+    # xname idx corresponds to FullInputNames global (used for plot titles)
+    xname_idx = get_array_idx(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+    # get the idxs for FullInputName (do it here before rho, SOC redefined)
+    const_idxs = get_const_idx(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
     arrs = 0
     idxarr = 0
     for i, specinput in enumerate(full_inputs):
@@ -1365,13 +1368,23 @@ def LinePlotFunc(self, propQ = 'T',
     if arrs != 1:
         raise KeyError("Exactly one array of inputs must be provided")
     
-    # convert h to density
+    # convert h to rho
     if h is not None:
-        rho = atm().rho(h)
+        rho1 = atm().rho(h)
+    else:
+        if isinstance(rho, np.ndarray):
+            rho1 = rho.copy()
+        else:
+            rho1 = rho
         
     # convert SOC to Voc
     if SOC is not None:
-        Voc = VocFuncBase(SOC, self.BattType)
+        Voc1 = VocFuncBase(SOC, self.BattType)
+    elif Voc is not None:
+        if isinstance(rho, np.ndarray):
+            Voc1 = Voc.copy()
+        else:
+            Voc1 = Voc
     
     # collapsing indexes
     if idxarr == 3:
@@ -1380,7 +1393,7 @@ def LinePlotFunc(self, propQ = 'T',
         idxarr = 3 
 
     if t is None:
-        clean_inputs = [Uinf, dT, rho, Voc] # if Voc is arr, SOC is arr and vice versa
+        clean_inputs = [Uinf, dT, rho1, Voc1] # if Voc is arr, SOC is arr and vice versa
         PropQs = np.zeros((clean_inputs[idxarr].size, len(propQshort)))
         for i, value in enumerate(clean_inputs[idxarr]):
             inner_input = copy.deepcopy(clean_inputs)
@@ -1394,7 +1407,7 @@ def LinePlotFunc(self, propQ = 'T',
             #     break 
         endidx = clean_inputs[idxarr].size
     else:
-        clean_inputs = [Uinf, dT, rho, t]
+        clean_inputs = [Uinf, dT, rho1, t]
         PropQs = np.zeros((clean_inputs[idxarr].size, len(propQshort)))
         inner_input = copy.deepcopy(clean_inputs)
         for i, value in enumerate(clean_inputs[idxarr]):
@@ -1413,23 +1426,16 @@ def LinePlotFunc(self, propQ = 'T',
     # todo: convert units back to original input
     inputarr = inputarr[:endidx]
     PropQs = PropQs[:endidx, :]
-    
-    ## IMPORTANT: full_inputs does not posses Voc, rho calculated by SOC, h respectively
-    # I apologize to future viewers of this atrocious code; rushing the unit conversions was a necessary evil
-    Uinf =  full_inputs[0]
-    dT =    full_inputs[1]
-    rho =   full_inputs[2]
-    h =     full_inputs[3]
-    SOC =   full_inputs[4]
-    Voc =   full_inputs[5]
-    t =     full_inputs[6]
-    SOC, Voc, t, Uinf, dT, rho, h = reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+
+    # convert units back and get arrays
+    [SOC, Voc, t, Uinf, dT, rho, h] = reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
     inputs_reverted = [SOC, Voc, t, Uinf, dT, rho, h]
-    xname_idx = get_array_idx(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
     for item in inputs_reverted:
         if isinstance(item, np.ndarray):
             inputarr = item
-    const_idxs, const_vals = get_const_idx_vals(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+        
+    # can do this no problem now bc rho and Voc weren't impacted by the conversions (so they stayed as None)
+    const_vals = get_const_vals(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
     
     if plot:
         # primary goal: plot the inputarray on the x-axis versus a selected propQ on the yaxis
@@ -1455,8 +1461,8 @@ def LinePlotFunc(self, propQ = 'T',
         for propQspec in propQ:
             propqidx = propQshort.index(propQspec)
     
-            fig, ax = plt.subplots(figsize = (6, 4))
-            lines = ax.plot(inputarr, PropQs[:, propqidx], color = 'k')
+            fig, ax = plt.subplots(figsize = (7, 4), dpi = 300)
+            lines = ax.plot(inputarr, PropQs[:, propqidx], color = 'k', label= '_nolegend')
             plt.xlabel(FullInputNames[xname_idx])
             plt.ylabel(propQnames[propqidx])
             
@@ -1466,31 +1472,68 @@ def LinePlotFunc(self, propQ = 'T',
                 continue
             else:
                 Ib = PropQs[:, 21]
-                if self.Iblimit < Ib.max():
-                    ax.axvline(inputarr[np.argmin(np.abs(Ib-self.Iblimit))], color = 'orange', label = f'{self.Iblimit:.4g}A')
+                xcrosses, xcross_idxs = find_intersections(inputarr, Ib, self.Iblimit)
+                if Ib.min() > self.Iblimit: # entire plot is invalid!
+                    ax.axvline(inputarr[0], color = 'orange', path_effects = [patheffects.withTickedStroke(spacing = 12, angle = -135, length = 0.5)], 
+                               label = f'Ib max = {self.Iblimit:.4g} W')
+                    ax.axvline(inputarr[-1], color = 'orange', path_effects = [patheffects.withTickedStroke(spacing = 12, angle = 135, length = 0.5)])
 
+                if len(xcrosses) == 0:
+                    pass
+                elif len(xcrosses) == 1:
+                    # determine which way to orient the ticks
+                    if Ib[xcross_idxs[0] - 1] > self.Iblimit: # if left is higher than limit, ticks face left (default)
+                        ax.axvline(xcrosses[0], color = 'orange', path_effects = [patheffects.withTickedStroke(spacing = 12, angle = 135, length = 0.5)], 
+                                   label = f'Ib max = {self.Iblimit:.4g} A')
+                    else:
+                        ax.axvline(xcrosses[0], color = 'orange', path_effects = [patheffects.withTickedStroke(spacing = 12, angle = -135, length = 0.5)], 
+                                   label = f'Ib max = {self.Iblimit:.4g} A')
+                        
+                elif len(xcrosses) == 2:
+                    # left ticks -->  |\   (angle = 135 deg)
+                    # right ticks --> /|  (angle = 135 deg)
+                    ax.axvline(xcrosses[0], color = 'orange', path_effects = [patheffects.withTickedStroke(spacing = 12, angle = -135, length = 0.5)], 
+                               label = f'Ib max = {self.Iblimit:.4g} A')
+                    ax.axvline(xcrosses[1], color = 'orange', path_effects = [patheffects.withTickedStroke(spacing = 12, angle = 135, length = 0.5)])
+                    
             # Pm limit line
             if self.Pmlimit is None:
                 continue
             else:
                 Pin_m = PropQs[:, 14]
-                if self.Pmlimit < Pin_m.max():
-                    ax.axvline(inputarr[np.argmin(np.abs(Pin_m-self.Pmlimit))], color = '#cc0000', label = f'{self.Pmlimit:.4g}W')
-            
-            # Tip Mach (Mtip) limit line
-            if h is None:
-                # TODO: get alt from rho in stdatm1976 (or specified atmosphere), then get temp from alt
-                print('Currently, cannot plot tip mach limit for rho input, please input h')
-                continue
-            else:
-                RPM = PropQs[:, 6]
-                
-                gamma = 1.4
-                R = 286.9   # J/(kg*K)
-                a = np.sqrt(gamma*R*atm().T(h)) #TODO allow Mtip conversion for when h is arr
-                Mtip = (RPM*self.propdiam*np.pi/60)/a
-                if Mtip.any() >= 0.8:
-                    ax.axvline(inputarr[np.argmin(np.abs(Mtip-0.8))], color = 'xkcd:sky blue', label = '0.8 Mtip')
+                xcrosses, xcross_idxs = find_intersections(inputarr, Pin_m, self.Pmlimit)
+                if Pin_m.min() > self.Pmlimit: # entire plot is invalid!
+                    ax.axvline(inputarr[0], color = '#cc0000', path_effects = [patheffects.withTickedStroke(spacing = 10, angle = -135, length = 0.5)], 
+                               label = f'Pin_m max = {self.Pmlimit:.4g} W')
+                    ax.axvline(inputarr[-1], color = '#cc0000', path_effects = [patheffects.withTickedStroke(spacing = 10, angle = 135, length = 0.5)])
+                    
+                if len(xcrosses) == 0:
+                    pass
+                elif len(xcrosses) == 1:
+                    if Pin_m[xcross_idxs[0] - 1] > self.Pmlimit: # if left is higher than limit, ticks face left (default)
+                        ax.axvline(xcrosses[0], color = '#cc0000', path_effects = [patheffects.withTickedStroke(spacing = 10, angle = 135, length = 0.5)], 
+                                   label = f'Pin_m max = {self.Pmlimit:.4g} W')
+                    else:
+                        ax.axvline(xcrosses[0], color = '#cc0000', path_effects = [patheffects.withTickedStroke(spacing = 10, angle = -135, length = 0.5)], 
+                                   label = f'Pin_m max = {self.Pmlimit:.4g} W')
+                elif len(xcrosses) == 2:
+                    ax.axvline(xcrosses[0], color = '#cc0000', path_effects = [patheffects.withTickedStroke(spacing = 10, angle = -135, length = 0.5)], 
+                               label = f'Pin_m max = {self.Pmlimit:.4g} W')
+                    ax.axvline(xcrosses[1], color = '#cc0000', path_effects = [patheffects.withTickedStroke(spacing = 10, angle = 135, length = 0.5)])
+
+            # TODO: get the Mtip line to work
+            # if h is None:
+            #     # TODO: get alt from rho in stdatm1976 (or specified atmosphere), then get temp from alt
+            #     print('Currently, cannot plot tip mach limit for rho input, please input h')
+            #     continue
+            # else:
+            #     RPM = PropQs[:, 6]
+            #     gamma = 1.4
+            #     R = 286.9   # J/(kg*K)
+            #     a = np.sqrt(gamma*R*atm().T(h)) #TODO allow Mtip conversion for when h is arr
+            #     Mtip = (RPM*self.propdiam*np.pi/60)/a
+            #     if Mtip.any() >= 0.8:
+            #         ax.axvline(inputarr[np.argmin(np.abs(Mtip-0.8))], color = 'xkcd:sky blue', label = '0.8 Mtip')
             
             # cursor for datatips
             make_cursor_lineplot(lines, xname_idx, propqidx)
@@ -1501,9 +1544,13 @@ def LinePlotFunc(self, propQ = 'T',
                 parts.append(f"{FullInputNamesShort[idx]} = {const_vals[validx]:.4g} {FullInputUnits[idx]}")
                 validx += 1
             title_str = ", ".join(parts)
-            plt.title(f'{FullInputNames[xname_idx]} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
-            plt.grid()
+            if self.nmot > 1: # crude but works
+                extra = 's'
+            else:
+                extra = ''
+            plt.title(f'{FullInputNames[xname_idx]} sweep; {title_str}' + f'\n{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery')
             plt.legend()
+            plt.grid()
             plt.minorticks_on()
         plt.show()
         
@@ -1521,17 +1568,17 @@ def process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args):
     output_array = np.zeros((rows, cols, 27)) # TODO: pass the 27 as some variable for the len of propQ
     for i in range(rows):
         for j in range(cols):
-            uinf = Uinf_grid[i, j]
-            dt = dT_grid[i, j]
+            Uinf = Uinf_grid[i, j]
+            dT = dT_grid[i, j]
             rho = rho_grid[i, j]
             b_val = batt_grid[i, j]
             
             if mode == 0:
                 # b_val is Voc
-                output_array[i, j, :] = SimplifiedRPM_Voc(uinf, dt, rho, b_val, *args)
+                output_array[i, j, :] = SimplifiedRPM_Voc(Uinf, dT, rho, b_val, *args)
             else:
                 # b_val is t
-                output_array[i, j, :] = SimplifiedRPM_t(uinf, dt, rho, b_val, *args)
+                output_array[i, j, :] = SimplifiedRPM_t(Uinf, dT, rho, b_val, *args)
     return output_array
 
 # supplemental function for the cursor values
@@ -1604,8 +1651,12 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         raise ValueError("Exactly one of h or rho must be provided")
     
     full_inputs = [SOC, Voc, t, Uinf, dT, rho, h]
+    # print(dT[-1])
     input_names = ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']
-
+    
+    # out = reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+    const_idxs = get_const_idx(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+    # print(dT[-1])
     # dictionary formulation
     provided_inputs = {name: val for name, val in zip(input_names, full_inputs) if val is not None}
     arrays = {}
@@ -1659,31 +1710,10 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
     else:
         batt_grid = get_grid('t', constants)
         mode = 1
-
+        
     # Numba loop
     output_array = process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args)
-
-    # reconvert all inputs from base metric to original input via idx flags
-    # SOC, Voc, t, Uinf, dT, rho, h
-    # goal: SOC (0-1)   --> SOC (0-100)
-    #       Voc stays same
-    #       t (s)       --> t input (either s, m, hr)
-    #       Uinf (m/s)  --> Uinf input (mps, mph, fps kmh, kt)
-    #       dT (0-1)    --> dT (0-100)
-    #       Voc stays the same
-    #       rho (kg/m3) --> rho input (kg/m3, slug/ft3, lbm/ft3)
-    #       h (m)       --> h input (m, ft)
-    
-    # need to identify the x axis variable and the y axis variable
-    # then convert xarray, yarray
     SOC, Voc, t, Uinf, dT, rho, h = reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
-    # self.unit_idxs is a list with 4 idxs, corresponding to 4 FullInputNames and FullInputUnits
-    # need to match them with x and y axes again
-    
-    # end goal: x_array, y_array in original units plus xidx,yidx for full input names and units
-    # have Uinf = converted Uinf, dT = converted dT, rho = converted rho, t = converted t, SOC = converted SOC
-    # all values are of the right units (2 constant, 2 array)
-    
     # recall to get correctly scaled values
     full_inputs = [SOC, Voc, t, Uinf, dT, rho, h]
     input_names = ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']    
@@ -1709,6 +1739,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
     xname_idx = fullname_idxs[0]
     yname_idx = fullname_idxs[1]
     
+    const_vals = get_const_vals(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs) # TODO: automate so it gets the input const vals (ignore rho, Voc if they get precalculated)
     if plot:
         # TODO: add in T = D
         # TODO: limit plot (or data gathering range automatically 
@@ -1749,7 +1780,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         #  13      14     15    16     17    18  19  20  21  22  23  24   25   26
         # Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         for propQspec in propQ:
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize = (7, 4), dpi = 300)
 
             propqidx = propQshort.index(propQspec)
             propQ_spec = output_array[:, :, propqidx]
@@ -1817,7 +1848,17 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
             # title_str = ", ".join(parts)
             
             # add constants to title string with proper units!
-            plt.title(f'{xaxis}, {yaxis} sweeps;' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+            parts = []
+            validx = 0
+            for idx in const_idxs:
+                parts.append(f"{FullInputNamesShort[idx]} = {const_vals[validx]:.4g} {FullInputUnits[idx]}")
+                validx += 1
+            title_str = ", ".join(parts)
+            if self.nmot > 1:
+                extra = 's'
+            else:
+                extra = ''
+            plt.title(f'{FullInputNames[xname_idx]}, {FullInputNames[yname_idx]} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery')
             plt.minorticks_on()
         plt.show()
         

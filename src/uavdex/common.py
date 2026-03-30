@@ -235,7 +235,7 @@ class PointDesign:
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
                              t_s, t_m, t_hr, SOC, Voc)
         
-        check(dT,  lambda x: (x >= 0.0) & (x <= 1.0), "dT")
+        check(dT,  lambda x: (x >= 0.1) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0.0, "rho")
         check(h,   lambda x: x >= 0.0, "h")
         check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
@@ -312,7 +312,7 @@ class PointDesign:
                              t_s, t_m, t_hr, SOC, Voc)
         
         # bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
-        check(dT,  lambda x: (x >= 0.15) & (x <= 1.0), "dT")
+        check(dT,  lambda x: (x >= 0.1) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0.0, "rho")
         check(h,   lambda x: x >= 0.0, "h")
         check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
@@ -389,7 +389,7 @@ class PointDesign:
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
                              t_s, t_m, t_hr, SOC, Voc)
             
-        check(dT,  lambda x: (x > 0.15) & (x <= 1.0), "dT")
+        check(dT,  lambda x: (x > 0.1) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0, "rho")
         check(h,   lambda x: x >= 0, "h")
         check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")

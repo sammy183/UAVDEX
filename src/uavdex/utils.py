@@ -198,7 +198,7 @@ def reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, unitconv_idx):
         h /= convs[unitconv_idx[specidx]]
         specidx += 1
     
-    return(SOC, Voc, t, Uinf, dT, rho, h)
+    return([SOC, Voc, t, Uinf, dT, rho, h])
 
 def get_array_idx(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
     '''
@@ -213,19 +213,36 @@ def get_array_idx(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
             return unit_idxs[i]
     return None
 
-def get_const_idx_vals(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
-    '''To recover unit idx for plot titles and tooltips'''
+def get_const_idx(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
+    '''
+    To recover unit idx for plot titles and tooltips
+    '''
     spec = SOC if SOC is not None else (Voc if Voc is not None else t)
     rhoh = rho if rho is not None else h
 
     outs = []
-    vals = []
+    # vals = []
     vars_ordered = [spec, Uinf, dT, rhoh]
     for i, v in enumerate(vars_ordered):
         if isinstance(v, float) or isinstance(v, int):
             outs.append(unit_idxs[i])
-            vals.append(v)
-    return outs, vals
+            # vals.append(v)
+    return outs#, vals
+
+def get_const_vals(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
+    '''
+    To recover unit values for plot titles and tooltips
+    '''
+    spec = SOC if SOC is not None else (Voc if Voc is not None else t)
+    rhoh = rho if rho is not None else h
+
+    outs = []
+    vars_ordered = [spec, Uinf, dT, rhoh]
+    for i, v in enumerate(vars_ordered):
+        if isinstance(v, float) or isinstance(v, int):
+            outs.append(v)
+    return outs
+
 
 def check(val, cond, name):
     '''for checking whether inputs are within range'''
@@ -233,7 +250,29 @@ def check(val, cond, name):
         return
     arr = np.asarray(val)
     if not np.all(cond(arr)):
-        raise ValueError(f"{name} out of bounds: {val}")
+        raise ValueError(f"{name} out of bounds")
+        
+def find_intersections(x, propqval, limitval):
+    '''
+    Intersections for lineplot limit lines
+    '''
+    f = propqval - limitval
+    intersections = []
+    intersection_idxs = []
+    
+    for i in range(len(x) - 1):
+        if f[i] == 0:
+            intersections.append(x[i])
+            intersection_idxs.append(i)
+
+        # Use sign change to find intersections
+        elif f[i] * f[i+1] < 0:
+            x0, x1 = x[i], x[i+1]
+            y0, y1 = f[i], f[i+1]
+            x_cross = x0 - y0 * (x1 - x0) / (y1 - y0)
+            intersections.append(x_cross) 
+            intersection_idxs.append(i)
+    return intersections, intersection_idxs
 
 
 # def convert_base_metric(input_unit):
