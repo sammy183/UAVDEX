@@ -52,7 +52,7 @@ import uavdex as ud
 
 design = ud.PointDesign() 			                    # initialize PointDesign object
 design.Motor('C-4130/20', nmot = 2)                     # add a motor, and specify the # of motors (nmot = 1 by default)
-design.Battery('Gaoneng_8S_3300', discharge = 0.85)     # add a battery, and specify the maximum discharge (default is 0.8, aka 80%)
+design.Battery('Gaoneng_8S_3300', discharge = 85)     # add a battery, and specify the maximum discharge (default is 80%)
 design.Prop('16x10E')                                   # add a propeller
 ```
 To view and edit the databases use 
@@ -87,63 +87,73 @@ design.Prop('16x10E')                  # add a propeller
 # dT: 	throttle (0-100%)
 # h_m: 	altitude in m         (alternatively use h_ft, rho_kgm3, rho_slugft3, rho_lbft3)
 # t_s: 	runtime in s          (alternatively use t_m, t_hr, SOC, Voc)
-propQs = design.PointResult(Uinf_mps = 15, dT = 0.7, h_m = 50, t_s = 30, 
+propQs = design.PointResult(Uinf_mps = 15, dT = 70, h_m = 50, t_s = 30, 
                             verbose = True) # this returns propQs as an array and also prints to console. To stop printing, set verbose = False.
 ```
 which prints the following to the console:
 > ```
-> At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m^3, Runtime = 30.0 s
-> Total Thrust (N)                 = 50.254
-> Total Torque (Nm)                = 1.776
-> RPM                              = 6251.107
-> Drive Efficiency                 = 38.44%
-> Propeller Efficiency             = 64.82%
-> Gearing Efficiency               = 100.00%
-> Motor Efficiency                 = 91.52%
-> ESC Efficiency                   = 65.10%
-> Battery Efficiency               = 99.52%
-> Mech. Power Out of 1 Motor (W)   = 581.428
-> Elec. Power Into 1 Motor (W)     = 635.293
-> Elec. Power Into 1 ESC (W)       = 975.872
-> Waste Power in 1 Motor (W)       = 53.865
-> Waste Power in 1 ESC (W)         = 340.579
-> Waste Power in 1 Battery (W)     = 9.506
-> Current in 1 Motor (A)           = 28.674
-> Current in 1 ESC (A)             = 30.832
-> Current in Battery (A)           = 61.664
-> Voltage in 1 Motor (V)           = 22.156
-> Voltage in 1 ESC (V)             = 31.651
-> Battery Voltage (V)              = 31.651
-> Voltage Per Cell (V)             = 3.976
-> State of Charge                  = 84.43%
+> At Uinf = 15.00 m/s, Throttle = 70%, Density = 1.219 kg/m³, Runtime = 30.0 s
+> Total Thrust (N)               = 49.204
+> Total Thrust (lbf)             = 11.062
+> Total Thrust (g)               = 5017.426
+> Total Thrust (oz)              = 176.984
+> Total Torque (N-m)             = 1.746
+> Total Torque (lbf-ft)          = 1.288
+> RPM                            = 6202.703
+> Drive Efficiency               = 38.587
+> Propeller Efficiency           = 65.074
+> Gearing Efficiency             = 100.000
+> Motor Efficiency               = 91.527
+> ESC Efficiency                 = 65.100
+> Battery Efficiency             = 99.519
+> Mech. Power Out of 1 Motor (W) = 567.097
+> Elec. Power Into 1 Motor (W)   = 619.593
+> Elec. Power Into 1 ESC (W)     = 951.756
+> Waste Power in 1 Motor (W)     = 52.497
+> Waste Power in 1 ESC (W)       = 332.163
+> Waste Power in 1 Battery (W)   = 9.193
+> Current in 1 Motor (A)         = 28.198
+> Current in 1 ESC (A)           = 30.321
+> Current in Battery (A)         = 60.641
+> Voltage in 1 Motor (V)         = 21.973
+> Voltage in 1 ESC (V)           = 31.390
+> Battery Voltage (V)            = 31.390
+> Voltage Per Cell (V)           = 3.943
+> State of Charge                = 84.687
 > ```
+
+propQs is an array containing the following propulsion quantities,
+| Index | Symbol | Description | Units |
+|------:|--------|-------------|-------|
+| 0 | `T_N` | Total Thrust | N |
+| 1 | `T_lbf` | Total Thrust | lbf |
+| 2 | `T_g` | Total Thrust | g |
+| 3 | `T_oz` | Total Thrust | oz |
+| 4 | `Q_Nm` | Total Torque | N·m |
+| 5 | `Q_lbfft` | Total Torque | lbf·ft |
+| 6 | `RPM` | Propeller Speed | RPM |
+| 7 | `eta_drive` | Drive Efficiency | % |
+| 8 | `eta_p` | Propeller Efficiency | % |
+| 9 | `eta_g` | Gearing Efficiency | % |
+| 10 | `eta_m` | Motor Efficiency | % |
+| 11 | `eta_c` | ESC Efficiency | % |
+| 12 | `eta_b` | Battery Efficiency | % |
+| 13 | `Pout` | Mechanical Power Out of 1 Motor | W |
+| 14 | `Pin_m` | Electrical Power Into 1 Motor | W |
+| 15 | `Pin_c` | Electrical Power Into 1 ESC | W |
+| 16 | `Pw_m` | Waste Power in 1 Motor | W |
+| 17 | `Pw_c` | Waste Power in 1 ESC | W |
+| 18 | `Pw_b` | Waste Power in 1 Battery | W |
+| 19 | `Im` | Current in 1 Motor | A |
+| 20 | `Ic` | Current in 1 ESC | A |
+| 21 | `Ib` | Current in Battery | A |
+| 22 | `Vm` | Voltage in 1 Motor | V |
+| 23 | `Vc` | Voltage in 1 ESC | V |
+| 24 | `Vb` | Battery Voltage | V |
+| 25 | `Voc` | Voltage Per Cell | V |
+| 26 | `SOC` | State of Charge | % |
+
 <!--
-> At Uinf = 15.0 m/s, Throttle = 70%, Density = 1.219 kg/m<sup>3</sup>, Runtime = 30.0 s  
-> Total Thrust (N)               = 50.254  
-> Total Torque (Nm)              = 1.776  
-> RPM                            = 6251.107 \
-> Drive Efficiency               = 38.44% \
-> Propeller Efficiency           = 64.82% \
-> Gearing Efficiency             = 100.00% \
-> Motor Efficiency               = 91.52% \
-> ESC Efficiency                 = 65.10% \
-> Battery Efficiency             = 99.52% \
-> Mech. Power Out of 1 Motor (W) = 581.428 \
-> Elec. Power Into 1 Motor (W)   = 635.293 \
-> Elec. Power Into 1 ESC (W)     = 975.872 \
-> Waste Power in 1 Motor (W)     = 53.865 \
-> Waste Power in 1 ESC (W)       = 340.579 \
-> Waste Power in 1 Battery (W)   = 9.506  
-> Current in 1 Motor (A)         = 28.674  
-> Current in 1 ESC (A)           = 30.832  
-> Current in Battery (A)         = 61.664  
-> Voltage in 1 Motor (V)         = 22.156  
-> Voltage in 1 ESC (V)           = 31.651 \
-> Battery Voltage (V)            = 31.651 \
-> Voltage Per Cell (V)           = 3.976 \
-> State of Charge                = 84.43%
--->
-propQs is an array containing the propulsion quantities listed below:
 | Index | Symbol      | Description                                      | Units |
 |------:|-------------|--------------------------------------------------|-------|
 | 0     | ```'T' ```           | Thrust                                          | N     |
@@ -168,15 +178,16 @@ propQs is an array containing the propulsion quantities listed below:
 | 19    | ```'Vb'```          | Battery voltage                                 | V     |
 | 20    | ```'Voc'```         | Cell voltage                                    | V     |
 | 21    | ```'SOC'```         | Battery state of charge                         | %     |
+-->
 
 ## LinePlot
 To plot a *sweep* of any one of the 4 inputs (Uinf, dT, h/rho, Voc/SOC/t) with the others fixed, use a LinePlot. The output variable plotted on the y-axis will be a selected propQ from the list above.
 
 To select a propQ output, input a single variable or a list of variables as shown below
 ```python
-propQ = 'T'                       # for a single plot
+propQ = 'T_lbf'                       # for a single plot
 # OR
-propQ = ['T', 'eta_drive', 'Ib']  # to create multiple plots of propQs for the same sweep
+propQ = ['T_lbf', 'eta_drive', 'Ib']  # to create multiple plots of propQs for the same sweep
 ```
 
 *LinePlot example*
@@ -191,8 +202,9 @@ design.Battery('Gaoneng_8S_3300') 		# add a battery
 design.Prop('16x10E') 					# add a propeller
 
 # LinePlot usage
-design.LinePlot(propQ = ['T','eta_drive','Ib'], Uinf_mps = np.linspace(0, 50), dT = 1.0, h_m = 100, t_s = 30)
+design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'], Uinf_mps = np.linspace(0, 50), dT = 100, h_m = 100, t_s = 30)
 ```
+<!--TODO update plots!!!!!>
 <table>
 	<tr>
 		<td width="33%" valign="top">
@@ -244,13 +256,14 @@ design.Prop('16x10E') 					# add a propeller
 n = 120  
 
 # ContourPlot (sweeps of velocity and runtime)
-design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
-                   Uinf_mps = np.linspace(0, 80, n), 
+design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
+                   Uinf_mps = np.linspace(0, 45, n), 
                    t_s = np.linspace(0, 300, n),
-                   dT = 1.0, 
+                   dT = 100, 
                    h_m = 100)
 ```
-<!-- the following is incredibly cooked, but it gets the plots to be large and pretty --> 
+<!-- the following is incredibly cooked, but it gets the plots to be large and pretty -->
+<!--TODO update plots!!!!!>
 <table>
   <tr>
     <td align="center" valign="top">
@@ -273,6 +286,7 @@ design.ContourPlot(propQ = ['T', 'eta_drive', 'Ib'],
 At some constant velocity, the right side bound of the contour plot indicates the runtime of the propulsion system in seconds. This is determined by where SOC = (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at some combination of Uinf, dT, Voc, and h. 
                                           
 ### Additional ContourPlot examples
+<!--TODO update plots!!!!!>
 <table>
 	<tr>
 		<td width="33%" valign="top">
@@ -280,7 +294,7 @@ At some constant velocity, the right side bound of the contour plot indicates th
 				<a>Efficiency for velocity vs throttle
           <pre>design.ContourPlot(propQ = 'eta_drive',
                   Uinf_mps = np.linspace(0, 45, 200), 
-                  dT = np.linspace(0.2, 1.0, 200), 
+                  dT = np.linspace(20, 100, 200), 
                   h_m = 50, 
                   t_s = 20)</pre>
         </a>
@@ -292,9 +306,9 @@ At some constant velocity, the right side bound of the contour plot indicates th
 				<a>Efficiency for velocity vs cell voltage
           <pre>design.ContourPlot(propQ = 'eta_drive',
                   Uinf_mps = np.linspace(0, 45, 200), 
-                  dT = 1.0,
+                  dT = 100,
                   h_m = 50, 
-                  Voc = np.linspace(3.5, 4.2, 200)</pre>
+                  Voc = np.linspace(3.5, 4.2, 200))</pre>
         </a>
 			</p>
       <img src="./Examples/ContourPlot_V_Voc_eta.png">
@@ -304,9 +318,9 @@ At some constant velocity, the right side bound of the contour plot indicates th
 				<a>Efficiency for cell voltage vs throttle
            <pre>design.ContourPlot(propQ = 'eta_drive',
                   Uinf_mps = 30.0,
-                  dT = np.linspace(0.2, 1.0, 200),
+                  dT = np.linspace(20, 100, 200),
                   h_m = 50, 
-                  Voc = np.linspace(3.5, 4.2, 200)</pre>
+                  Voc = np.linspace(3.5, 4.2, 200))</pre>
         </a>
 			</p>
 			<img src="./Examples/ContourPlot_Voc_dT_eta.png">
