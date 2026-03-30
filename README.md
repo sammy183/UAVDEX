@@ -204,6 +204,7 @@ design.Prop('16x10E') 					# add a propeller
 # LinePlot usage
 design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'], Uinf_mps = np.linspace(0, 50), dT = 100, h_m = 100, t_s = 30)
 ```
+<!--TODO update plots!!!!!>
 <table>
 	<tr>
 		<td width="33%" valign="top">
@@ -261,7 +262,8 @@ design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
                    dT = 100, 
                    h_m = 100)
 ```
-<!-- the following is incredibly cooked, but it gets the plots to be large and pretty --> 
+<!-- the following is incredibly cooked, but it gets the plots to be large and pretty -->
+<!--TODO update plots!!!!!>
 <table>
   <tr>
     <td align="center" valign="top">
@@ -284,6 +286,7 @@ design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
 At some constant velocity, the right side bound of the contour plot indicates the runtime of the propulsion system in seconds. This is determined by where SOC = (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at some combination of Uinf, dT, Voc, and h. 
                                           
 ### Additional ContourPlot examples
+<!--TODO update plots!!!!!>
 <table>
 	<tr>
 		<td width="33%" valign="top">
