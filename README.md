@@ -202,9 +202,11 @@ design.Battery('Gaoneng_8S_3300') 		# add a battery
 design.Prop('16x10E') 					# add a propeller
 
 # LinePlot usage
-design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'], Uinf_mps = np.linspace(0, 50), dT = 100, h_m = 100, t_s = 30)
+design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'], 
+                Uinf_mph = np.linspace(0, 100), 
+                dT = 100, h_m = 100, t_s = 30)
 ```
-<!--TODO update plots!!!!!>
+This code opens the plots below. Datatips pop up when clicking anywhere along the line. 
 <table>
 	<tr>
 		<td width="33%" valign="top">
@@ -233,7 +235,7 @@ design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'], Uinf_mps = np.linspace(0, 50
 
 np.linspace simply samples 50 points by default between the start and ending values. To sample 200 points and get a smoother curve, use 
 ```python
-Uinf_mps = np.linspace(0, 50, 200)
+Uinf_mph = np.linspace(0, 100, 200)
 ```
 Alternatively, Uinf can be set to a specific value and sweeps of another quantity (dT, h/rho, or SOC/Voc/t) used.
 
@@ -263,21 +265,21 @@ design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
                    h_m = 100)
 ```
 <!-- the following is incredibly cooked, but it gets the plots to be large and pretty -->
-<!--TODO update plots!!!!!>
+
 <table>
   <tr>
     <td align="center" valign="top">
-      Thrust for Uinf vs t<br>
+      Thrust for velocity vs runtime<br>
       <img src="./Examples/ContourPlot_V_t_T.png" width="600"><br>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     </td>
     <td align="center" valign="top">
-      Propulsion Efficiency for Uinf vs t<br>
+      Propulsion Efficiency for velocity vs runtime<br>
       <img src="./Examples/ContourPlot_V_t_eta.png" width="600"><br>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     </td>
     <td align="center" valign="top">
-      Battery Current for Uinf vs t<br>
+      Battery Current for velocity vs runtime<br>
       <img src="./Examples/ContourPlot_V_t_Ib.png" width="600"><br>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     </td>
@@ -286,7 +288,6 @@ design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
 At some constant velocity, the right side bound of the contour plot indicates the runtime of the propulsion system in seconds. This is determined by where SOC = (1 - discharge). Additional bounds can originate when the propulsion system cannot generate thrust at some combination of Uinf, dT, Voc, and h. 
                                           
 ### Additional ContourPlot examples
-<!--TODO update plots!!!!!>
 <table>
 	<tr>
 		<td width="33%" valign="top">
