@@ -25,10 +25,8 @@ The tools to thoughtfully design aircraft should be accessible to all.
 
 <!--
 For detailed theory and validation, check out my paper published here:
--->
-
 **ADD LINK**
-
+-->
 # Installation
 Anaconda is recommended. In anaconda prompt with a desired environment (not base) activated, simply run:
 ```python
