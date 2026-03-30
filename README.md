@@ -24,38 +24,9 @@ The tools to thoughtfully design aircraft should be accessible to all.
 </p>
 
 <!--
-<table>
-  <tr>
-    <td align="center" valign="top">
-      <img src="./Examples/LinePlot_V_T.png" width="600"><br>
-    </td>
-    <td align="center" valign="top">
-      <img src="./Examples/LinePlot_V_eta.png" width="600"><br>
-    </td>
-    <td align="center" valign="top">
-      <img src="./Examples/LinePlot_V_Ib.png" width="600"><br>
-    </td
-  </tr>
-  <tr>
-    <td align="center" valign="top">
-      <img src="./Examples/ContourPlot_V_t_T.png" width="600"><br>
-    </td>
-    <td align="center" valign="top">
-      <img src="./Examples/ContourPlot_V_t_eta.png" width="600"><br>
-    </td>
-    <td align="center" valign="top">
-      <img src="./Examples/ContourPlot_V_dT_eta.png" width="600"><br>
-    </td>
-  </tr>
-</table>
--->
-
-
-
 For detailed theory and validation, check out my paper published here:
-
 **ADD LINK**
-
+-->
 # Installation
 Anaconda is recommended. In anaconda prompt with a desired environment (not base) activated, simply run:
 ```python
