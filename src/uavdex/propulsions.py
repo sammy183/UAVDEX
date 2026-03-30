@@ -1461,7 +1461,7 @@ def LinePlotFunc(self, propQ = 'T',
         for propQspec in propQ:
             propqidx = propQshort.index(propQspec)
     
-            fig, ax = plt.subplots(figsize = (7, 4), dpi = 300)
+            fig, ax = plt.subplots()#figsize = (7, 4), dpi = 300)
             lines = ax.plot(inputarr, PropQs[:, propqidx], color = 'k', label= '_nolegend')
             plt.xlabel(FullInputNames[xname_idx])
             plt.ylabel(propQnames[propqidx])
@@ -1780,7 +1780,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         #  13      14     15    16     17    18  19  20  21  22  23  24   25   26
         # Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         for propQspec in propQ:
-            fig, ax = plt.subplots(figsize = (7, 4), dpi = 300)
+            fig, ax = plt.subplots()
 
             propqidx = propQshort.index(propQspec)
             propQ_spec = output_array[:, :, propqidx]

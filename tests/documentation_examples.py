@@ -25,9 +25,9 @@ propQs = design.PointResult(Uinf_mps = 15, dT = 70, h_m = 50, t_s = 30,
                             verbose = True) # this returns propQs as an array and also prints to console. To stop printing, set verbose = False.
 
 #%% LinePlot usage
-# design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'], 
-#                 Uinf_mph = np.linspace(0, 100), 
-#                 dT = 100, h_m = 100, t_s = 30)
+design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'], 
+                Uinf_mph = np.linspace(0, 100), 
+                dT = 100, h_m = 100, t_s = 30)
 
 #%% ContourPlot
 import uavdex as ud
