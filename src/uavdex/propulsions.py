@@ -149,18 +149,14 @@ from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
 from uavdex.VSPcontribution.units import *
-from uavdex.utils import exactly_one_defined
+from uavdex.utils import exactly_one_defined, reverse_input_conversion
 import warnings
 warnings.filterwarnings(
     "ignore",
     message="Pick support for QuadMesh"
 )
 
-lbfN = 4.44822
-ftm = 0.3048
-MPH_TO_MPS = 0.44704  # Conversion factor: 1 mph to m/s
-
-global propQnames, propQshort, propQunit
+global propQnames, propQshort, propQunit, FullInputNames, FullInputNamesShort, FullInputUnits
 propQnames = ['Total Thrust (N)',
               'Total Thrust (lbf)',
               'Total Thrust (g)',
@@ -194,33 +190,29 @@ propQshort = ['T_N', 'T_lbf', 'T_g', 'T_oz',
               'Pout', 'Pin_m', 'Pin_c', 'Pw_m', 'Pw_c', 'Pw_b', 
               'Im', 'Ic', 'Ib', 'Vm', 'Vc', 'Vb', 
               'Voc', 'SOC']
-propQunit = ['N',
-             'lbf',
-             'g',
-             'oz',
-             'N-m',
-             'lbf-ft',
-             'RPM',
-             '%',
-             '%',
-             '%',
-             '%',
-             '%',
-             '%',
-             'W',
-             'W',
-             'W',
-             'W',
-             'W',
-             'W',
-             'A',
-             'A',
-             'A',
-             'V',
-             'V',
-             'V',
-             'V',
-             '%']
+propQunit = ['N', 'lbf', 'g', 'oz',
+             'N-m', 'lbf-ft', 'RPM',
+             '%', '%', '%', '%', '%', '%',
+             'W', 'W', 'W', 'W', 'W', 'W', 
+             'A', 'A', 'A', 
+             'V', 'V', 'V', 
+             'V', '%']
+FullInputNames = ['State of Charge (%)', 'Cell Voltage (V)', 'Runtime (s)', 
+                  'Runtime (min)', 'Runtime (hr)',
+                  'Velocity (mph)', 'Velocity (fps)', 'Velocity (m/s)', 
+                  'Velocity (kmh)', 'Velocity (knots)',
+                  'Throttle (%)', 
+                  'Altitude (m)', 'Altitude (ft)', 'Air Density (kg/m\u00B3)', 
+                  'Air Density (slug/ft\u00B3)', 'Air Density (lbm/ft\u00B3)',
+                  ]
+FullInputNamesShort = ['SOC', 'Voc', 't', 't', 't',
+                       'Uinf', 'Uinf', 'Uinf', 'Uinf', 'Uinf',
+                       'dT',
+                       'h', 'h', 'rho', 'rho', 'rho']
+FullInputUnits = ['%', 'V', 's', 'min', 'hr',
+                  'mph', 'fps', 'm/s', 'kmh', 'kt',
+                  '%',
+                  'm', 'ft', 'kg/m\u00B3', 'slug/ft\u00B3', 'lbm/ft\u00B3']
 
 from uavdex import _uavdex_root
 path_to_data = _uavdex_root / 'Databases/'
@@ -409,7 +401,7 @@ def parse_propeller_data(prop_name):
                 v_mph = float(parts[0])         # V in mph
                 torque_nm = float(parts[9])     # Torque (N-m)
                 thrust_n = float(parts[10])     # Thrust (N)
-                v_mps = v_mph * MPH_TO_MPS      # Convert to m/s
+                v_mps = v_mph * mph2ms      # Convert to m/s
                 table_lines.append((v_mps, thrust_n, torque_nm))
             except (ValueError, IndexError):
                 continue  # Skip malformed lines
@@ -790,6 +782,15 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     T_oz = T*n2oz 
     Q_lbfft = Q*nm2ftlb
     
+    # convert efficiencies from decimal to %
+    eta_drive *= 100
+    eta_p *= 100
+    eta_g *= 100
+    eta_m *= 100
+    eta_c *= 100
+    eta_b *= 100
+    SOC *= 100
+    
     return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
@@ -876,6 +877,15 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     T_oz = T*n2oz 
     Q_lbfft = Q*nm2ftlb
     
+    # convert efficiencies from decimal to %
+    eta_drive *= 100
+    eta_p *= 100
+    eta_g *= 100
+    eta_m *= 100
+    eta_c *= 100
+    eta_b *= 100
+    SOC *= 100
+    
     return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
@@ -909,8 +919,8 @@ def VocFuncBase(SOC, BattType):
     
     TODO: implment battery voltage equation adjustments based on predicted health (measured via Vsoc at full charge!)
     '''
-    if SOC < 0.0: # effective error message
-        return(-1)
+    # if np.array([SOC]).any() < 0.0: # effective error message
+    #     return(-1)
     
     if BattType == 'LiPo':
         return(1.7*SOC**3 - 2.1*SOC**2 + 1.2*SOC + 3.4)
@@ -1042,6 +1052,15 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     T_oz = T*n2oz 
     Q_lbfft = Q*nm2ftlb
     
+    # convert efficiencies from decimal to %
+    eta_drive *= 100
+    eta_p *= 100
+    eta_g *= 100
+    eta_m *= 100
+    eta_c *= 100
+    eta_b *= 100
+    SOC *= 100
+    
     return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
@@ -1142,6 +1161,15 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     T_oz = T*n2oz 
     Q_lbfft = Q*nm2ftlb
     
+    # convert efficiencies from decimal to %
+    eta_drive *= 100
+    eta_p *= 100
+    eta_g *= 100
+    eta_m *= 100
+    eta_c *= 100
+    eta_b *= 100
+    SOC *= 100
+    
     return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
@@ -1170,7 +1198,7 @@ def PointResultFunc(self, Uinf = None, dT = None,
     '''
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
-            self.KV, self.Rm, self.I0, self.nmot, self.ds)
+            self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
         
@@ -1195,19 +1223,19 @@ def PointResultFunc(self, Uinf = None, dT = None,
             
         propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
         if propQs[0] == 0.0:
-            print(f'ERROR: Input t corresponds to SOC less than {(1-self.ds)*100:.0f}% from .Battery()')
+            print(f'ERROR: Input t corresponds to SOC less than {100-self.ds:.0f}% from .Battery()')
             return(np.zeros(len(propQshort)))
     else:
         # Voc or SOC input
         if SOC is not None:
-            if SOC < 1 - self.ds:
-                print(f'ERROR: SOC input less than {(1-self.ds)*100:.0f}% from .Battery()')
+            if SOC < 1 - self.ds/100:
+                print(f'ERROR: SOC input less than {100-self.ds:.0f}% from .Battery()')
                 return(np.zeros(len(propQshort)))
             Voc = VocFuncBase(SOC, self.BattType)
         else:
             # voc input, check that it maps to SOC between 0-1
-            if Voc < VocFuncBase(1-self.ds, self.BattType):
-                print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC < {(1-self.ds)*100:.0f}%')
+            if Voc < VocFuncBase(1-self.ds/100, self.BattType):
+                print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC < {100-self.ds:.0f}%')
                 return(np.zeros(len(propQshort)))
             elif Voc > VocFuncBase(1, self.BattType):
                 print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC > 100%')
@@ -1234,19 +1262,19 @@ def PointResultFunc(self, Uinf = None, dT = None,
         if t is not None:
             print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Runtime = {t:.1f} s')
         elif SOC is not None and SOC > 0.0:
-            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, SOC = {SOC*100:.0f}%')
+            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, SOC = {SOC:.0f}%')
         elif Voc is not None:
             print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Voc = {Voc:.2f} V')
 
         for i, name in enumerate(propQnames):
             # if name == 'Total Thrust (lbf)':
             #     print(f'{name:30} = {propQs[i]/lbfN:.3f}')
-            if 'Efficiency' in name:
-                print(f'{name:30} = {propQs[i]*100:.2f}%')
-            elif 'State of Charge' in name:
-                print(f'{name:30} = {propQs[i]*100:.2f}%')
-            else:
-                print(f'{name:30} = {propQs[i]:.3f}')
+            # if 'Efficiency' in name:
+            #     print(f'{name:30} = {propQs[i]:.2f}%')
+            # elif 'State of Charge' in name:
+            #     print(f'{name:30} = {propQs[i]*100:.2f}%')
+            # else:
+            print(f'{name:30} = {propQs[i]:.3f}')
     return(np.array(propQs))
 
 #%%################################ LinePlot #################################
@@ -1271,6 +1299,22 @@ def PointResultFunc(self, Uinf = None, dT = None,
 #         outputs.append(propQ[propQindx])
 #         thrusts.append(propQ[0])
 #     return(outputs, thrusts)
+
+# supplemental function for the cursor values
+def make_cursor_lineplot(artist, xname_idx, propQidx):
+    
+    c = mplcursors.cursor(artist, hover = True)
+    @c.connect("add")
+    def _(sel):
+        sel.annotation.get_bbox_patch().set(fc="white")
+        x, y =     sel.target
+        idx =   sel.index
+        vals =  sel.artist.get_array()[idx]
+        sel.annotation.set_text(
+            f"{FullInputNamesShort[xname_idx]} = {x:.4g} {FullInputUnits[xname_idx]}\n"
+            f"{propQshort[propQidx]} = {vals:.4g} {propQunit[propQidx]}"
+        )
+    return c
 
 def LinePlotFunc(self, propQ = 'T',
                  Uinf = None, dT = None, 
@@ -1303,7 +1347,7 @@ def LinePlotFunc(self, propQ = 'T',
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
-            self.KV, self.Rm, self.I0, self.nmot, self.ds)
+            self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
     
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
@@ -1369,10 +1413,12 @@ def LinePlotFunc(self, propQ = 'T',
             # if PropQs[i, 0] <= 0: # indicates that the solution is infeasible
             #     endidx = i 
             #     break
-            if PropQs[i, -1] <= 1-self.ds: # minimum SOC = 10% for batteries
+            if PropQs[i, -1] <= 100-self.ds: # minimum SOC = 10% for batteries
                 endidx = i
                 PropQs[i, :] = np.array([0.0]*len(propQshort))
         endidx = clean_inputs[idxarr].size
+    
+    # todo: convert units back to original input
     inputarr = inputarr[:endidx]
     PropQs = PropQs[:endidx, :]
     
@@ -1398,23 +1444,21 @@ def LinePlotFunc(self, propQ = 'T',
             propQ = [propQ]
             
         #Iblimit, Imlimit
-    
         for propQspec in propQ:
             propqidx = propQshort.index(propQspec)
     
             fig, ax = plt.subplots(figsize = (6, 4))
-            ax.plot(inputarr, PropQs[:, propqidx], color = 'k')
+            lines = ax.plot(inputarr, PropQs[:, propqidx], color = 'k')
             plt.xlabel(input_name)
             plt.ylabel(propQnames[propqidx])
             
-            c2 = mplcursors.cursor(hover = True)
-            @c2.connect("add")
-            def _(sel):
-                sel.annotation.get_bbox_patch().set(fc="white")
-                sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=1.0)
+            xname_idx = 0 # TODO: automate this
+            make_cursor_lineplot(lines, xname_idx, propqidx)
             
             # get short names of inputs along with title string
             input_names = ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
+            
+            # todo: automate title and units
             parts = []
             for name, val in zip(input_names, full_inputs):
                 if val is None:
@@ -1457,9 +1501,7 @@ def process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args):
     return output_array
 
 # supplemental function for the cursor values
-def make_cursor(artist, xname_idx, yname_idx, propQidx):
-    input_names = ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']
-    input_units = ['%', 'V', 's', 'm/s', '', 'kg/m\u00B3', 'm']
+def make_cursor_contourplot(artist, xname_idx, yname_idx, propQidx):
     
     c = mplcursors.cursor(artist)
     @c.connect("add")
@@ -1469,16 +1511,14 @@ def make_cursor(artist, xname_idx, yname_idx, propQidx):
         idx =   sel.index
         vals =  sel.artist.get_array()[idx]
         sel.annotation.set_text(
-            f"{input_names[xname_idx]} = {x:.4g} {input_units[xname_idx]}\n"
-            f"{input_names[yname_idx]} = {y:.4g} {input_units[yname_idx]}\n"
+            f"{FullInputNamesShort[xname_idx]} = {x:.4g} {FullInputUnits[xname_idx]}\n"
+            f"{FullInputNamesShort[yname_idx]} = {y:.4g} {FullInputUnits[yname_idx]}\n"
             f"{propQshort[propQidx]} = {vals:.4g} {propQunit[propQidx]}"
         )
     return c
 
 # can plot any two of Uinf, dT, h/rho, t/Voc/SOC
 def ContourPlotFunc(self, propQ = 'T_lbf',
-                    xaxis = None,
-                    yaxis = None,
                     Uinf = None, dT = None, 
                     rho = None, h = None, 
                     SOC = None, Voc = None, t = None, 
@@ -1489,8 +1529,6 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
     Input
     ----------------------------------------------------------------------------------------------------------
         a propulsion quantity (propQ) of interest (options given by the output array)
-        xaxis, yaxis for plot specified from the names:
-            ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']
         
         constant values for two of: 
             SOC/Voc/t, Uinf, dT, rho/h
@@ -1519,11 +1557,11 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         better xaxis, yaxis selection by default (time on horizontal axis, altitude on vertical, etc)
     '''
     if verbose:
-        print('Compiling code (~8s)...')
+        print('Compiling code (please wait ~15s)...')
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
-            self.KV, self.Rm, self.I0, self.nmot, self.ds)
+            self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
     
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
@@ -1548,27 +1586,14 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
     if len(arrays) != 2:
         raise ValueError(f"Expected exactly 2 array inputs, but found {len(arrays)}: {list(arrays.keys())}")
 
-    if xaxis != None:
-        if xaxis not in arrays:
-            raise ValueError(f'The specified xaxis ({xaxis}) must be given as an array (i.e. Uinf = np.linspace(0, 30, 50))')
-    else:
-        xaxis = list(arrays)[0]
-    if yaxis != None:
-        if yaxis not in arrays:
-            raise ValueError(f'The specified yaxis ({yaxis}) must be given as an array (i.e. Uinf = np.linspace(0, 30, 50))')
-    else:
-        yaxis = list(arrays)[1]
-    
-    if xaxis not in arrays or yaxis not in arrays:
-        raise ValueError(f"The specified xaxis ('{xaxis}') and yaxis ('{yaxis}') must match the provided array inputs.")
-    
+    xaxis, yaxis = list(arrays)
     x_array = arrays[xaxis]
     y_array = arrays[yaxis]
     
-    # ALTERNATIVE WITHOUT DYNAMIC TYPING FOR SPEED
     if x_array.shape != y_array.shape:
         raise ValueError(f"Input arrays must have the same size. Got {x_array.shape} and {y_array.shape}.")
 
+    # possible combinations
     X_grid, Y_grid = np.meshgrid(x_array, y_array)
     grid_shape = X_grid.shape 
 
@@ -1604,12 +1629,56 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
     # Numba loop
     output_array = process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args)
 
+    # reconvert all inputs from base metric to original input via idx flags
+    # SOC, Voc, t, Uinf, dT, rho, h
+    # goal: SOC (0-1)   --> SOC (0-100)
+    #       Voc stays same
+    #       t (s)       --> t input (either s, m, hr)
+    #       Uinf (m/s)  --> Uinf input (mps, mph, fps kmh, kt)
+    #       dT (0-1)    --> dT (0-100)
+    #       Voc stays the same
+    #       rho (kg/m3) --> rho input (kg/m3, slug/ft3, lbm/ft3)
+    #       h (m)       --> h input (m, ft)
+    
+    # need to identify the x axis variable and the y axis variable
+    # then convert xarray, yarray
+    SOC, Voc, t, Uinf, dT, rho, h = reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+    # self.unit_idxs is a list with 4 idxs, corresponding to 4 FullInputNames and FullInputUnits
+    # need to match them with x and y axes again
+    
+    # end goal: x_array, y_array in original units plus xidx,yidx for full input names and units
+    # have Uinf = converted Uinf, dT = converted dT, rho = converted rho, t = converted t, SOC = converted SOC
+    # all values are of the right units (2 constant, 2 array)
+    
+    # recall to get correctly scaled values
+    full_inputs = [SOC, Voc, t, Uinf, dT, rho, h]
+    input_names = ['SOC', 'Voc', 't', 'Uinf', 'dT', 'rho', 'h']    
+    
+    # repopulate arrays and constants with unconverted values
+    provided_inputs = {name: val for name, val in zip(input_names, full_inputs) if val is not None}
+    arrays = {}
+    constants = {}
+    fullname_idxs = []
+    specidx = 0 # used to determine which two indixes from self.unit_idxs to use for axes
+    for name, val in provided_inputs.items():
+        if isinstance(val, (np.ndarray, list, tuple)):
+            arrays[name] = np.asarray(val)
+            fullname_idxs.append(self.unit_idxs[specidx])
+            specidx += 1
+        else:
+            constants[name] = val
+            specidx += 1
+    xaxis, yaxis = list(arrays)
+    x_array = arrays[xaxis]
+    y_array = arrays[yaxis]    
+    
+    xname_idx = fullname_idxs[0]
+    yname_idx = fullname_idxs[1]
+    
     if plot:
-        # TODO: add in Ilimit, Plimit (from motor/battery/ESC database)
         # TODO: add in T = D
         # TODO: limit plot (or data gathering range automatically 
-        # so ppl don't have to input values 
-        # they just specify which variable they want to be the array (simple)
+        # so ppl don't have to input values, they just specify which variable they want to be the array (simple)
         if isinstance(propQ, list):
             pass
         else:
@@ -1649,8 +1718,6 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
             fig, ax = plt.subplots()
 
             propqidx = propQshort.index(propQspec)
-            print(propQnames[propqidx])
-            print(propQshort[propqidx])
             propQ_spec = output_array[:, :, propqidx]
             
             # plot propQ contourplot
@@ -1666,7 +1733,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
             if self.Iblimit is None:
                 continue
             else:
-                Ib = output_array[:, :, 19]
+                Ib = output_array[:, :, 21]
 
                 if self.Iblimit < Ib.max():
                     Iblimitline = ax.contour(X, Y, Ib, colors = 'orange', levels = np.array([self.Iblimit]))
@@ -1691,61 +1758,32 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
                 
                 gamma = 1.4
                 R = 286.9   # J/(kg*K)
-                a = np.sqrt(gamma*R*atm().T(h)) #TODO what if h is an array? 
+                a = np.sqrt(gamma*R*atm().T(h)) #TODO allow Mtip conversion for when h is arr
                 Mtip = (RPM*self.propdiam*np.pi/60)/a
                 if Mtip.any() >= 0.8:
                     Mtiplimitline = ax.contour(X, Y, Mtip, colors = 'xkcd:sky blue', levels = np.array([0.8]))
                     ax.clabel(Mtiplimitline, inline = inlinelabel, fmt=lambda v: f'{v:.2f}')
 
-            # to get correct names: xaxis, yaxis --> input names idx --> full_input_names idx --> full_input_names value
-            full_input_names = ['State of Charge (0-1)', 'Cell Voltage (V)', 'Runtime (s)', 
-                                'Velocity (m/s)', 'Throttle (0-1)', 
-                                'Density (kg/m\u00B3)', 'Altitude (m)']
-            xname_idx = 0
-            yname_idx = 0
-            for i, name in enumerate(input_names):
-                if name == xaxis:
-                    xname_idx = i
-                elif name == yaxis:
-                    yname_idx = i
-            
-            plt.xlabel(full_input_names[xname_idx])
-            plt.ylabel(full_input_names[yname_idx])
+            # properly need to get xname, yname indices corresponding to FullInputNames!
+            plt.xlabel(FullInputNames[xname_idx])
+            plt.ylabel(FullInputNames[yname_idx])
             
             # make a grid of hidden points to use with the interactive datatips
             dots = ax.scatter(X.flatten(), Y.flatten(), c = propQ_spec.flatten(), alpha = 0)
-            make_cursor(dots, xname_idx, yname_idx, propqidx)
-            
-            # c2 = mplcursors.cursor(pickables=dots)
-            # @c2.connect("add")
-            # def _(sel):
-            #     sel.annotation.get_bbox_patch().set(fc="white")
-                
-            #     x, y = sel.target
-            #     idx = sel.index
-            #     vals = sel.artist.get_array()[idx]
-            #     sel.annotation.set_text(
-            #         f"{input_names[xname_idx]:5} = {x:.4g}\n"
-            #         f"{input_names[yname_idx]:5} = {y:.4g}\n"
-            #         f"{val:.4g}"
-            #     )
-                
-            # @c2.connect("add")
-            # def _(sel):
-            #     sel.annotation.get_bbox_patch().set(fc="white")
-            #     # sel.annotation.arrow_patch.set(arrowstyle="simple", fc="white", alpha=1.0)
-
+            make_cursor_contourplot(dots, xname_idx, yname_idx, propqidx)
             
             # get short names of inputs along with title string
-            parts = []
-            for name, val in zip(input_names, full_inputs):
-                if val is None:
-                    continue
-                if isinstance(val, np.ndarray):
-                    continue  # skip arrays
-                parts.append(f"{name} = {val}")
-            title_str = ", ".join(parts)
-            plt.title(f'{xaxis}, {yaxis} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
+            # parts = []
+            # for name, val in zip(input_names, full_inputs):
+            #     if val is None:
+            #         continue
+            #     if isinstance(val, np.ndarray):
+            #         continue  # skip arrays
+            #     parts.append(f"{name} = {val}")
+            # title_str = ", ".join(parts)
+            
+            # add constants to title string with proper units!
+            plt.title(f'{xaxis}, {yaxis} sweeps;' + f'\n{self.nmot} {self.motor_name} motor, {self.prop_name} propeller, {self.batt_name} battery')
             plt.minorticks_on()
         plt.show()
         

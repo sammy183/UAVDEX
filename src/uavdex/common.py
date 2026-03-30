@@ -117,10 +117,12 @@ class PointDesign:
     ############### COMPONENT INITIALIZATION ###############
     ########################################################
     ########################################################
-    def Battery(self, batt_name, discharge = 0.85):
+    def Battery(self, batt_name, discharge = 85):
         '''
         batt_name will be "manufacturer_#cellS_capacity"
         i.e. "Gaoneng_8S_3300, MaxAmps_12S_2000"
+        
+        discharge is equivalent to 100-SOC in %
         '''
         self.batt_name = batt_name
         self.ds = discharge
@@ -228,10 +230,10 @@ class PointDesign:
             raise ValueError("Only one of SOC, Voc, and runtime can be input")
         
         
-        Uinf, dT, rho, h, t, SOC = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+        Uinf, dT, rho, h, t, SOC, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
                              dT,
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
-                             t_s, t_m, t_hr, SOC)
+                             t_s, t_m, t_hr, SOC, Voc)
         
         check(dT,  lambda x: (x >= 0.0) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0.0, "rho")
@@ -304,13 +306,13 @@ class PointDesign:
         elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
             raise ValueError("Only one of SOC, Voc, and runtime can be input")
             
-        Uinf, dT, rho, h, t, SOC = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+        Uinf, dT, rho, h, t, SOC, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
                              dT,
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
-                             t_s, t_m, t_hr, SOC)
+                             t_s, t_m, t_hr, SOC, Voc)
         
         # bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
-        check(dT,  lambda x: (x >= 0.0) & (x <= 1.0), "dT")
+        check(dT,  lambda x: (x >= 0.15) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0.0, "rho")
         check(h,   lambda x: x >= 0.0, "h")
         check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
@@ -322,8 +324,6 @@ class PointDesign:
                             verbose = verbose, plot = plot))
         
     def ContourPlot(self, propQ = 'T_lbf',
-                    xaxis = None,
-                    yaxis = None,
                     Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
                     dT = None,
                     h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
@@ -357,11 +357,7 @@ class PointDesign:
             constant values for two of: 
                 Uinf, dT, rho/h, SOC/Voc/t
             equal size np.arrays for the other two values
-            
-            Optional: 
-                xaxis, yaxis for plot specified from the names:
-                ['Uinf', 'dT', 'rho', 'h', 'SOC', 'Voc', 't']
-            
+                        
         IMPORTANT: 
             bounds on ranges: dT in (0.2, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
             input arrays MUST have the same size (square input)
@@ -388,19 +384,19 @@ class PointDesign:
         elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
             raise ValueError("Only one of SOC, Voc, and runtime can be input")
         
-        Uinf, dT, rho, h, t, SOC = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+        Uinf, dT, rho, h, t, SOC, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
                              dT,
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
-                             t_s, t_m, t_hr, SOC)
+                             t_s, t_m, t_hr, SOC, Voc)
             
-        check(dT,  lambda x: (x > 0.0) & (x <= 1.0), "dT")
+        check(dT,  lambda x: (x > 0.15) & (x <= 1.0), "dT")
         check(rho, lambda x: x >= 0, "rho")
         check(h,   lambda x: x >= 0, "h")
         check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
         check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
         check(t,   lambda x: x >= 0, "t") 
         
-        return(ContourPlotFunc(self, propQ = propQ, xaxis = xaxis, yaxis=yaxis, 
+        return(ContourPlotFunc(self, propQ = propQ, 
                                Uinf = Uinf, dT = dT, 
                                rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
                                verbose = verbose, plot = plot))
