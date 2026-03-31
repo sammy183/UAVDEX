@@ -67,3 +67,66 @@ design.ContourPlot(propQ = 'eta_drive',
                   dT = np.linspace(20, 100, 200),
                   h_m = 50, 
                   Voc = np.linspace(3.5, 4.2, 200))
+
+#%%
+n = 200
+design.ContourPlot(propQ = ['eta_drive', 'eta_p', 'eta_m', 'RPM', 'Q_Nm'],
+                   Uinf_kt = np.linspace(0, 90, n),
+                   dT = 80,
+                   h_ft = np.linspace(0, 80000, n),
+                   t_s = 30)
+#%% All 6 styles for t input
+# n = 120 # overview of all 6 types of contourplot
+# plot = True
+# t_arr = np.linspace(0, 500, n)
+# t_const = 30
+# Uinf_arr = np.linspace(0, 60, n)
+# Uinf_const = 25
+# dT_arr = np.linspace(20, 100, n)
+# dT_const = 80
+# h_arr = np.linspace(0, 80000, n)
+# h_const = 100
+# cases = [{"propQ":"eta_drive",
+#          "t_s":t_arr,
+#          "Uinf_mps":Uinf_arr, 
+#          "dT":dT_const,
+#          "h_ft":h_const,
+#          "plot":plot},
+         
+#          {"propQ":"eta_drive",
+#         "t_s":t_arr,
+#         "Uinf_mps":Uinf_const, 
+#         "dT":dT_arr,
+#         "h_ft":h_const,
+#         "plot":plot},
+         
+#          {"propQ":"eta_drive",
+#         "t_s":t_arr,
+#         "Uinf_mps":Uinf_const, 
+#         "dT":dT_const,
+#         "h_ft":h_arr,
+#         "plot":plot},
+         
+#          {"propQ":"eta_drive",
+#         "t_s":t_const,
+#         "Uinf_mps":Uinf_arr, 
+#         "dT":dT_arr,
+#         "h_ft":h_const,
+#         "plot":plot},
+         
+#          {"propQ":"eta_drive",
+#         "t_s":t_const,
+#         "Uinf_mps":Uinf_arr, 
+#         "dT":dT_const,
+#         "h_ft":h_arr,
+#         "plot":plot},
+         
+#          {"propQ":"eta_drive",
+#         "t_s":t_const,
+#         "Uinf_mps":Uinf_const, 
+#         "dT":dT_arr,
+#         "h_ft":h_arr,
+#         "plot":plot}
+#     ]
+# for i, case in enumerate(cases):
+#         _, _, _ = design.ContourPlot(**case)
