@@ -1,7 +1,5 @@
 # UAV DEsign eXploration
 Sammy N. Nassau, RPI DBF 2021-2026
-## IN PROGRESS: April 2026 is the target for public release
-
 [UAVDEX Repo](https://github.com/sammy183/UAVDEX)
 
 UAVDEX enables rapid determination of electric aircraft propulsion quantities (i.e. thrust or efficiency) across the entire flight envelope. It is intended primarily for students competing in design competitions such as AIAA Design/Build/Fly or SAE Aero. 
