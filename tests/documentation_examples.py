@@ -50,11 +50,11 @@ n = 120
 #                    h_m = 100)
 
 #%% Additional contourplot
-design.ContourPlot(propQ = 'eta_drive',
-                  Uinf_mph = np.linspace(0, 120, 300), 
-                  dT = np.linspace(20, 100, 300), 
-                  h_m = 50, 
-                  t_s = 20)
+# design.ContourPlot(propQ = 'T_lbf',
+#                   Uinf_mph = np.linspace(0, 120, 300), 
+#                   dT = np.linspace(20, 100, 300), 
+#                   h_m = 50, 
+#                   SOC = 80)
 
 # design.ContourPlot(propQ = 'eta_drive',
 #                   Uinf_mps = np.linspace(0, 45, 200), 
@@ -70,7 +70,7 @@ design.ContourPlot(propQ = 'eta_drive',
 
 #%% Altitude Efficiency Examination
 n = 300
-design.ContourPlot(propQ = ['eta_drive', 'eta_p', 'eta_m', 'RPM', 'Q_Nm'],
+design.ContourPlot(propQ = ['eta_drive', 'eta_p', 'eta_h', 'RPM', 'Q_Nm'],
                    Uinf_kt = np.linspace(0, 90, n),
                    dT = 80,
                    h_ft = np.linspace(0, 80000, n),

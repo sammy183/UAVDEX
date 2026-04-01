@@ -244,13 +244,15 @@ def get_const_vals(SOC, Voc, t, Uinf, dT, rho, h, unit_idxs):
     return outs
 
 
-def check(val, cond, name):
-    '''for checking whether inputs are within range'''
+def check(val, lb, ub, name):
+    '''for checking whether inputs are within range
+    lb = lower bound
+    ub = upper bound'''
     if val is None:
         return
     arr = np.asarray(val)
-    if not np.all(cond(arr)):
-        raise ValueError(f"{name} out of bounds")
+    if np.all(arr < lb) or np.all(arr > ub):
+        raise ValueError(f"{name} out of bounds, {lb} to {ub}")
         
 def find_intersections(x, propqval, limitval):
     '''

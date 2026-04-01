@@ -228,20 +228,20 @@ class PointDesign:
             raise ValueError("Only one altitude/air density can be input")
         elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
             raise ValueError("Only one of SOC, Voc, and runtime can be input")
-        
-        
+                
         Uinf, dT, rho, h, t, SOC, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
                              dT,
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
                              t_s, t_m, t_hr, SOC, Voc)
-        
-        check(dT,  lambda x: (x >= 0.1) & (x <= 1.0), "dT")
-        check(rho, lambda x: x >= 0.0, "rho")
-        check(h,   lambda x: x >= 0.0, "h")
-        check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
-        check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
-        check(t,   lambda x: x >= 0.0, "t") 
-            
+        if dT is not None:
+            check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
+        if SOC is not None:
+            check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
+        check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
+        check(h,        0.0,    np.inf,     "h") # lambda x: x >= 0.0,
+        check(Voc,      2.0,    4.2,        "Voc") # lambda x: (x >= 2.0) & (x <= 4.2)
+        check(t,        0.0,    np.inf,     "t") # lambda x: x >= 0.0
+                    
         return(PointResultFunc(self, Uinf = Uinf, dT = dT, rho = rho, h = h, 
                                SOC = SOC, Voc = Voc, t = t, 
                                verbose = verbose))
@@ -311,14 +311,30 @@ class PointDesign:
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
                              t_s, t_m, t_hr, SOC, Voc)
         
-        # bounds on ranges: dT in (0, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
-        check(dT,  lambda x: (x >= 0.1) & (x <= 1.0), "dT")
-        check(rho, lambda x: x >= 0.0, "rho")
-        check(h,   lambda x: x >= 0.0, "h")
-        check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
-        check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
-        check(t,   lambda x: x >= 0.0, "t") 
-                
+        # check bounds on input variables
+        if dT is not None:
+            check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
+        if SOC is not None:
+            check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
+        check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
+        check(h,        0.0,    np.inf,     "h") # lambda x: x >= 0.0,
+        check(Voc,      2.0,    4.2,        "Voc") # lambda x: (x >= 2.0) & (x <= 4.2)
+        check(t,        0.0,    np.inf,     "t") # lambda x: x >= 0.0
+        
+        # check propQ input
+        if isinstance(propQ, list):
+            if set(propQ).issubset(propQshort) == False:
+                # find the first missing item!
+                short_set = set(propQshort)
+                first_miss_idx = next((i for i, item in enumerate(propQ) if item not in short_set), None)
+                if first_miss_idx is not None:
+                    raise ValueError(f'Item "{propQ[first_miss_idx]}" at index {first_miss_idx} in propQ not recognized. Please select from {propQshort}')
+        elif isinstance(propQ, str):
+            if propQ not in propQshort:
+                raise ValueError(f'propQ not recognized, please select from {propQshort}')
+        else:
+            raise ValueError('propQ must be of type list or str')
+        
         return(LinePlotFunc(self, propQ = propQ, Uinf = Uinf, dT = dT, 
                             rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
                             verbose = verbose, plot = plot))
@@ -388,19 +404,39 @@ class PointDesign:
                              dT,
                              h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
                              t_s, t_m, t_hr, SOC, Voc)
-            
-        check(dT,  lambda x: (x > 0.1) & (x <= 1.0), "dT")
-        check(rho, lambda x: x >= 0, "rho")
-        check(h,   lambda x: x >= 0, "h")
-        check(SOC, lambda x: (x >= 0.0) & (x <= 1.0), "SOC")
-        check(Voc, lambda x: (x >= 2.0) & (x <= 4.2), "Voc")
-        check(t,   lambda x: x >= 0, "t") 
+        
+        # check bounds on input variables
+        if dT is not None:
+            check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
+        if SOC is not None:
+            check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
+        check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
+        check(h,        0.0,    np.inf,     "h") # lambda x: x >= 0.0,
+        check(Voc,      2.0,    4.2,        "Voc") # lambda x: (x >= 2.0) & (x <= 4.2)
+        check(t,        0.0,    np.inf,     "t") # lambda x: x >= 0.0
+        
+        # check propQ input
+        if isinstance(propQ, list):
+            if set(propQ).issubset(propQshort) == False:
+                # find the first missing item!
+                short_set = set(propQshort)
+                first_miss_idx = next((i for i, item in enumerate(propQ) if item not in short_set), None)
+                if first_miss_idx is not None:
+                    raise ValueError(f'Item "{propQ[first_miss_idx]}" at index {first_miss_idx} in propQ not recognized. Please select from {propQshort}')
+        elif isinstance(propQ, str):
+            if propQ not in propQshort:
+                raise ValueError(f'propQ not recognized, please select from {propQshort}')
+        else:
+            raise ValueError('propQ must be of type list or str')
         
         return(ContourPlotFunc(self, propQ = propQ, 
                                Uinf = Uinf, dT = dT, 
                                rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
                                verbose = verbose, plot = plot))
-        
+    
+    def shortenerror(self):
+        return(None)
+#%%
     # #############################################################################
     # #############################################################################
     # #############################################################################
