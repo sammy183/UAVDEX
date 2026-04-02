@@ -136,6 +136,12 @@ class PointDesign:
         self.CB = batt_data['Capacity (mAh)'].values[0]
         self.Rb = batt_data['Resistance (Ohm)'].values[0]
         self.BattType = batt_data['Battery Type'].values[0] # string, either LiPo or Liion
+        if self.BattType == 'LiPo':
+            self.batt_type_int = 0 # use Jeong for now
+        elif self.BattType == 'Liion':
+            self.batt_type_int = 2 
+        else:
+            raise ValueError('Battery Type ({self.BattType}) not recognized. Please input LiPo or Liion')
         self.Iblimit = batt_data['Max Continuous Discharge (A)'].values[0]
         self.battery = True
         # soon add weight, max continuous current, etc

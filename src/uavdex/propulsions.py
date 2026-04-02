@@ -225,18 +225,18 @@ path_to_data = _uavdex_root / 'Databases/'
 
 #%%################### Numerical Methods ###################
 # 1D root finding 
-@njit(fastmath = True)
-def bisection(low, high, func, *args):
+@njit(fastmath = True) # TODO: trying out no iterable!!
+def bisection(low, high, func, args):
     tol = 1e-3
     max_iter = 100
     for _ in range(max_iter):
         mid = (low + high) / 2
-        res_mid = func(mid, *args)
+        res_mid = func(mid, args)
         
         if res_mid**2 < tol**2 or res_mid == 0.0:
             return(mid)
         
-        if res_mid*func(low, *args) < 0:
+        if res_mid*func(low, args) < 0:
             high = mid
         else:
             low = mid
@@ -248,7 +248,6 @@ def bisection(low, high, func, *args):
 def secant(low, high, func, *args):
     tol = 1e-3
     max_iter = 100 
-    
     x0 = low 
     x1 = high
     for i in range(max_iter):
@@ -631,7 +630,7 @@ def CTBase(RPM, J, rpm_list, numba_prop_data):
 
 #%% ####################### PROPULSION MODELS #######################
 @njit(fastmath = True)
-def VocFunc(SOC, BattType):
+def VocFunc(SOC, batt_type_int):
     '''
     Determines the battery Voltage (Voc) as a function of State of Charge (SOC) given from 0-1 for a specified battery chemistry
     
@@ -654,22 +653,23 @@ def VocFunc(SOC, BattType):
     
     TODO: implment battery voltage equation adjustments based on predicted health (measured via Vsoc at full charge!)
     '''
-    if BattType == 'LiPo':
+    if batt_type_int == 0: # LiPo Jeong 2020
         return(1.7*SOC**3 - 2.1*SOC**2 + 1.2*SOC + 3.4)
-        # return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
-    elif BattType == 'Liion':
+    elif batt_type_int == 1: # LiPo Chen 2006
+        return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
+    elif batt_type_int == 2: # Liion, i3 cell
         return(-4.48*((1-SOC)**5) + 9.09*((1-SOC)**4) - 7.08*((1-SOC)**3) + 2.32*((1-SOC)**2) - 0.76*(1-SOC) + 4.10)
     else:
         raise ValueError('Battery Type not recognized')
 
 #%% Numba SimpleRPM functions (one for precalculated Voc one for t)
 @njit(fastmath = True)
-def SimpleRPMeqs_Voc(RPM, *args):
+def SimpleRPMeqs_Voc(RPM, args):
     '''
     rho, Voc precalculated from h and SOC (or given directly)
     TODO: full docstring
     '''
-    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
@@ -681,26 +681,26 @@ def SimpleRPMeqs_Voc(RPM, *args):
     return(RPMcalc, J, CP, Qm, Im, Ib, Vb, Vm)
 
 @njit(fastmath = True)
-def SimpleRPMeqs_t(RPM, *args):
+def SimpleRPMeqs_t(RPM, args):
     '''
     rho precalculated from h and t given to calculate SOC, Voc
     TODO: full docstring
     '''
-    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
     Ib = (Im*nmot)/eta_c
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
-    Vb = ns*VocFunc(SOC, BattType) - Ib*Rb
+    Vb = ns*VocFunc(SOC, batt_type_int) - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
     return(RPMcalc, J, CP, Qm, Im, Ib, Vb, Vm)
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
 @njit(fastmath = True)
-def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
+def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, args):
     '''
     rho given directly or precalculated from h
     Voc given directly or precalculated from SOC
@@ -718,34 +718,36 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
         eta_g = 0.94 # 94% gear efficiency assumed
     else:
         eta_g = 1.0
+        
+    params_array = (Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds)
     
     # checking initial feasibility with propeller Jmax
     Jmax = coef_numba_prop_data[:, 0, :].max()
     RPMlowerlimit = (Uinf*60)/(Jmax*d)
-    if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+    if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_Voc(RPMlowerlimit, params_array)[0]: 
         # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
-        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
-
-    def residualfunc(RPM, *args):
-        RPMcalc = SimpleRPMeqs_Voc(RPM, *args)[0]
+        return((0.0,)*27) ## TODO: make a way for the len of propQ to change automatically
+    
+    # try getting rid of args as an iterable
+    def residualfunc(RPM, args):
+        RPMcalc = SimpleRPMeqs_Voc(RPM, args)[0]
         res = RPMcalc - RPM
         return(res)
     
-    # Vbattinit = throttle*3.6*ns
     high = rpm_list[-1]
     low = rpm_list[0]
-    RPM = bisection(low, high, residualfunc, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
+    RPM = bisection(low, high, residualfunc, params_array)
     
-    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
+    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_Voc(RPM, params_array)
     if CP == 0.0: 
-        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
+        return((0.0,)*27) ## TODO: make a way for the len of propQ to change automatically
     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -765,41 +767,42 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, *args):
     eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
     eta_drive = (eta_p*eta_g*eta_m*eta_c)*eta_b
     
-    T = nmot*rho*((RPM/60)**2)*(d**4)*CT
-    Q *= nmot
+    T =     nmot*rho*((RPM/60)**2)*(d**4)*CT
+    Q *=    nmot
     
     # Calculate SOC via bisection between 0, 1
     # @njit(fastmath = True)
-    def VocResidual(SOC, *args):
-        Voc, BattType = args
-        return(VocFunc(SOC, BattType) - Voc)
-    SOC = bisection(0, 1, VocResidual, Voc, BattType)
-    if SOC <= 1-ds:
-        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
+    def VocResidual(SOC, args):
+        Voc, batt_type_int = args
+        return(VocFunc(SOC, batt_type_int) - Voc)
+    SOC = bisection(0, 1, VocResidual, (Voc, batt_type_int))
     
-    T_lbf = T*n2lb
-    T_g = T*n2g
-    T_oz = T*n2oz 
-    Q_lbfft = Q*nm2ftlb
+    if SOC <= 1-ds:
+        return((0.0,)*27) ## TODO: make a way for the len of propQ to change automatically
+    
+    T_lbf =     T*n2lb
+    T_g =       T*n2g
+    T_oz =      T*n2oz 
+    Q_lbfft =   Q*nm2ftlb
     
     # convert efficiencies from decimal to %
-    eta_drive *= 100
-    eta_p *= 100
-    eta_g *= 100
-    eta_m *= 100
-    eta_c *= 100
-    eta_b *= 100
-    SOC *= 100
+    eta_drive   *= 100
+    eta_p       *= 100
+    eta_g       *= 100
+    eta_m       *= 100
+    eta_c       *= 100
+    eta_b       *= 100
+    SOC         *= 100
     
-    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
+    return(T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
-            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
+            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC)
 
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
 @njit(fastmath = True)
-def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
+def SimplifiedRPM_t(Uinf, dT, rho, t, args):
     '''
     rho given directly or precalculated from h
     t given directly
@@ -816,7 +819,7 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -824,26 +827,28 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     else:
         eta_g = 1.0
         
+    
+    param_array = (t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds)
+        
     # checking initial feasibility with propeller Jmax
     Jmax = coef_numba_prop_data[:, 0, :].max()
     RPMlowerlimit = (Uinf*60)/(Jmax*d)
-    if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+    if RPMlowerlimit != 0 and RPMlowerlimit > SimpleRPMeqs_t(RPMlowerlimit, param_array)[0]:
         # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf, t or increase dT')
-        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
+        return((0.0,)*27) ## TODO: make a way for the len of propQ to change automatically
 
-    def residualfunc(RPM, *args):
-        RPMcalc = SimpleRPMeqs_t(RPM, *args)[0]
+    def residualfunc(RPM, args):
+        RPMcalc = SimpleRPMeqs_t(RPM, args)[0]
         res = RPMcalc - RPM
         return(res)
-    
-    # Vbattinit = throttle*3.6*ns
+        
     high = rpm_list[-1]
     low = rpm_list[0]
-    RPM = bisection(low, high, residualfunc, t, Uinf, dT, rho, eta_c, eta_g, *args)
+    RPM = bisection(low, high, residualfunc, param_array)
     
-    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_t(RPM, t, Uinf, dT, rho, eta_c, eta_g, *args)
+    _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqs_t(RPM, param_array)
     if CP == 0.0:
-        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
+        return((0.0,)*27) ## TODO: make a way for the len of propQ to change automatically
     CT = CTNumba(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -865,9 +870,9 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
     if SOC <= 1-ds:
-        return([0.0]*27) ## TODO: make a way for the len of propQ to change automatically
+        return((0.0,)*27) ## TODO: make a way for the len of propQ to change automatically
 
-    Voc = VocFunc(SOC, BattType)
+    Voc = VocFunc(SOC, batt_type_int)
     
     T = nmot*rho*((RPM/60)**2)*(d**4)*CT
     Q *= nmot
@@ -886,14 +891,14 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, *args):
     eta_b *= 100
     SOC *= 100
     
-    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
+    return(T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
-            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
+            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC)
 
 
 #%% Non-Numba SimpleRPM functions (one for precalculated Voc one for t)
-def VocFuncBase(SOC, BattType):
+def VocFuncBase(SOC, batt_type_int):
     '''
     Determines the battery Voltage (Voc) as a function of State of Charge (SOC) given from 0-1 for a specified battery chemistry
     
@@ -922,10 +927,11 @@ def VocFuncBase(SOC, BattType):
     # if np.array([SOC]).any() < 0.0: # effective error message
     #     return(-1)
     
-    if BattType == 'LiPo':
+    if batt_type_int == 0: # LiPo Jeong 2020
         return(1.7*SOC**3 - 2.1*SOC**2 + 1.2*SOC + 3.4)
-        # return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
-    elif BattType == 'Liion':
+    elif batt_type_int == 1: # LiPo Chen 2006
+        return(3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3)
+    elif batt_type_int == 2: # Liion, i3 cell
         return(-4.48*((1-SOC)**5) + 9.09*((1-SOC)**4) - 7.08*((1-SOC)**3) + 2.32*((1-SOC)**2) - 0.76*(1-SOC) + 4.10)
     else:
         raise ValueError('Battery Type not recognized')
@@ -935,7 +941,7 @@ def SimpleRPMeqsBase_Voc(RPM, *args):
     rho, Voc precalculated from h and SOC (or given directly)
     TODO: full docstring
     '''
-    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    Voc, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
@@ -957,17 +963,17 @@ def SimpleRPMeqsBase_t(RPM, *args):
      13      14     15    16     17    18  19  20  21  22  23  24   25   26
     Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
     '''
-    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    t, Uinf, dT, rho, eta_c, eta_g, GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     J = Uinf/((RPM/60)*d)
     CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
     Ib = (Im*nmot)/eta_c
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
-    Vb = ns*VocFuncBase(SOC, BattType) - Ib*Rb
+    Vb = ns*VocFuncBase(SOC, batt_type_int) - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
-    return([RPMcalc, J, CP, Qm, Im, Ib, Vb, Vm])
+    return(RPMcalc, J, CP, Qm, Im, Ib, Vb, Vm)
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
 def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
@@ -987,7 +993,7 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -1041,7 +1047,7 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     
     # Calculate SOC via bisection between 0, 1
     def VocResidual(SOC):
-        return(VocFuncBase(SOC, BattType) - Voc)
+        return(VocFuncBase(SOC, batt_type_int) - Voc)
     SOC = bisectionBase(0, 1, VocResidual)
     if SOC <= 1-ds:
         # print('SOC < specified discharge')
@@ -1061,10 +1067,10 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     eta_b *= 100
     SOC *= 100
     
-    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
+    return(T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
-            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
+            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC)
 
 
 # I need some method of setting whether we're inputting h or rho/t or SOC or Voc for the same function
@@ -1085,7 +1091,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     eta_c = 0.93
     
     # in the future could optimize parameters passed for memory, for now, it aids readability to pass everything
-    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, BattType, KV, Rm, I0, nmot, ds = args
+    GR, rpm_list, coef_numba_prop_data, d, ns, np_batt, CB, Rb, batt_type_int, KV, Rm, I0, nmot, ds = args
     
     # Gearing efficiency
     if GR != 1.0:
@@ -1154,7 +1160,7 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
         # print('SOC < Specified Discharge')
         return([0.0]*len(propQshort))
 
-    Voc = VocFuncBase(SOC, BattType)
+    Voc = VocFuncBase(SOC, batt_type_int)
     
     T_lbf = T*n2lb
     T_g = T*n2g
@@ -1170,10 +1176,10 @@ def SimplifiedRPMBase_t(Uinf, dT, rho, t, *args):
     eta_b *= 100
     SOC *= 100
     
-    return([T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
+    return(T, T_lbf, T_g, T_oz, Q, Q_lbfft, RPM, 
             eta_drive, eta_p, eta_g, eta_m, eta_c, eta_b, 
             Pout, Pin_m, Pin_c, Pw_m, Pw_c, Pw_b,
-            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC])
+            Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC)
 
 
 #%%################## PLOTTING FUNCTIONS ##################
@@ -1197,7 +1203,7 @@ def PointResultFunc(self, Uinf = None, dT = None,
     
     '''
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
-            self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
+            self.ns_batt, self.np_batt, self.CB, self.Rb, self.batt_type_int,
             self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
     if not exactly_one_defined(t, SOC, Voc):
         raise ValueError("Exactly one of t, SOC, or Voc must be provided")
@@ -1231,13 +1237,13 @@ def PointResultFunc(self, Uinf = None, dT = None,
             if SOC < 1 - self.ds/100:
                 print(f'ERROR: SOC input less than {100-self.ds:.0f}% from .Battery()')
                 return(np.zeros(len(propQshort)))
-            Voc = VocFuncBase(SOC, self.BattType)
+            Voc = VocFuncBase(SOC, self.batt_type_int)
         else:
             # voc input, check that it maps to SOC between 0-1
-            if Voc < VocFuncBase(1-self.ds/100, self.BattType):
+            if Voc < VocFuncBase(1-self.ds/100, self.batt_type_int):
                 print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC < {100-self.ds:.0f}%')
                 return(np.zeros(len(propQshort)))
-            elif Voc > VocFuncBase(1, self.BattType):
+            elif Voc > VocFuncBase(1, self.batt_type_int):
                 print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC > 100%')
                 return(np.zeros(len(propQshort)))
             
@@ -1343,7 +1349,7 @@ def LinePlotFunc(self, propQ = 'T',
     '''
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
-            self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
+            self.ns_batt, self.np_batt, self.CB, self.Rb, self.batt_type_int, 
             self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
     
     if not exactly_one_defined(t, SOC, Voc):
@@ -1379,7 +1385,7 @@ def LinePlotFunc(self, propQ = 'T',
         
     # convert SOC to Voc
     if SOC is not None:
-        Voc1 = VocFuncBase(SOC, self.BattType)
+        Voc1 = VocFuncBase(SOC, self.batt_type_int)
     elif Voc is not None:
         if isinstance(rho, np.ndarray):
             Voc1 = Voc.copy()
@@ -1575,10 +1581,10 @@ def process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args):
             
             if mode == 0:
                 # b_val is Voc
-                output_array[i, j, :] = SimplifiedRPM_Voc(Uinf, dT, rho, b_val, *args)
+                output_array[i, j, :] = SimplifiedRPM_Voc(Uinf, dT, rho, b_val, args)
             else:
                 # b_val is t
-                output_array[i, j, :] = SimplifiedRPM_t(Uinf, dT, rho, b_val, *args)
+                output_array[i, j, :] = SimplifiedRPM_t(Uinf, dT, rho, b_val, args)
     return output_array
 
 # supplemental function for the cursor values
@@ -1641,7 +1647,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         print('Compiling code (please wait ~15s)...')
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
-            self.ns_batt, self.np_batt, self.CB, self.Rb, self.BattType, 
+            self.ns_batt, self.np_batt, self.CB, self.Rb, self.batt_type_int, 
             self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
     
     if not exactly_one_defined(t, SOC, Voc):
@@ -1705,7 +1711,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         mode = 0
     elif 'SOC' in provided_inputs:
         soc_grid = get_grid('SOC', constants)
-        batt_grid = VocFuncBase(soc_grid, self.BattType) 
+        batt_grid = VocFuncBase(soc_grid, self.batt_type_int) 
         mode = 0
     else:
         batt_grid = get_grid('t', constants)
