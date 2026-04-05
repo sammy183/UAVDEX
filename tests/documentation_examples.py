@@ -69,12 +69,12 @@ n = 120
 #                   Voc = np.linspace(3.5, 4.2, 200))
 
 #%% Altitude Efficiency Examination
-n = 300
-design.ContourPlot(propQ = ['eta_drive', 'eta_p', 'eta_h', 'RPM', 'Q_Nm'],
-                   Uinf_kt = np.linspace(0, 90, n),
-                   dT = 80,
-                   h_ft = np.linspace(0, 80000, n),
-                   t_s = 30)
+# n = 300
+# design.ContourPlot(propQ = ['eta_drive', 'eta_p', 'eta_h', 'RPM', 'Q_Nm'],
+#                    Uinf_kt = np.linspace(0, 90, n),
+#                    dT = 80,
+#                    h_ft = np.linspace(0, 80000, n),
+#                    t_s = 30)
 #%% All 6 styles for t input
 # n = 300 # overview of all 6 types of contourplot
 # plot = True
@@ -87,41 +87,41 @@ design.ContourPlot(propQ = ['eta_drive', 'eta_p', 'eta_h', 'RPM', 'Q_Nm'],
 # h_arr = np.linspace(0, 80000, n)
 # h_const = 100
 # cases = [{"propQ":"eta_drive",
-#          "t_s":t_arr,
-#          "Uinf_mps":Uinf_arr, 
-#          "dT":dT_const,
-#          "h_ft":h_const,
-#          "plot":plot},
+#           "t_s":t_arr,
+#           "Uinf_mps":Uinf_arr, 
+#           "dT":dT_const,
+#           "h_ft":h_const,
+#           "plot":plot},
          
-#          {"propQ":"eta_drive",
+#           {"propQ":"eta_drive",
 #         "t_s":t_arr,
 #         "Uinf_mps":Uinf_const, 
 #         "dT":dT_arr,
 #         "h_ft":h_const,
 #         "plot":plot},
          
-#          {"propQ":"eta_drive",
+#           {"propQ":"eta_drive",
 #         "t_s":t_arr,
 #         "Uinf_mps":Uinf_const, 
 #         "dT":dT_const,
 #         "h_ft":h_arr,
 #         "plot":plot},
          
-#          {"propQ":"eta_drive",
+#           {"propQ":"eta_drive",
 #         "t_s":t_const,
 #         "Uinf_mps":Uinf_arr, 
 #         "dT":dT_arr,
 #         "h_ft":h_const,
 #         "plot":plot},
          
-#          {"propQ":"eta_drive",
+#           {"propQ":"eta_drive",
 #         "t_s":t_const,
 #         "Uinf_mps":Uinf_arr, 
 #         "dT":dT_const,
 #         "h_ft":h_arr,
 #         "plot":plot},
          
-#          {"propQ":"eta_drive",
+#           {"propQ":"eta_drive",
 #         "t_s":t_const,
 #         "Uinf_mps":Uinf_const, 
 #         "dT":dT_arr,

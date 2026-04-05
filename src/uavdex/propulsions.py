@@ -110,7 +110,7 @@ Simplifed RPM formulation (known Vsoc, Vinf, dT):
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
     Im = Q*KV*(np.pi/30) + I0 # for one motor
-    Ib = (nmot/eta_c)*Im
+    Ib = (nmot/eta_c)*Im*dT
     Vb = ns*(Voc) - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)
@@ -123,7 +123,7 @@ Simplified RPM formulation (known runtime (t), constant current):
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Q = rho*((RPM/60)**2)*(d**5)*(CP/(2*np.pi))
     Im = Q*KV*(np.pi/30) + I0 # for one motor
-    Ib = (nmot/eta_c)*Im
+    Ib = (nmot/eta_c)*Im*dT
     SOC = 1.0 - (Ib*t)/(CB*3.6)
     Voc = 3.685 - 1.031 * np.exp(-35 * SOC) + 0.2156 * SOC - 0.1178 * SOC**2 + 0.3201 * SOC**3
     Vb = ns*(Voc) - Ib*Rb
@@ -674,7 +674,7 @@ def SimpleRPMeqs_Voc(RPM, args):
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
-    Ib = (Im*nmot)/eta_c
+    Ib = (dT*Im*nmot)/eta_c
     Vb = ns*Voc - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
@@ -691,7 +691,7 @@ def SimpleRPMeqs_t(RPM, args):
     CP = CPNumba(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
-    Ib = (Im*nmot)/eta_c
+    Ib = (dT*Im*nmot)/eta_c
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
     Vb = ns*VocFunc(SOC, batt_type_int) - Ib*Rb
     Vm = dT*Vb
