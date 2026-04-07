@@ -43,6 +43,20 @@ Key inputs that define a single flight condition:
   * *OR* **t**: runtime 
 
 Runtime assumes constant current. This is valid when designing an aircraft that spends most of its flight time in a single condition (i.e. cruise).
+The inputs support most common units including
+
+| Input Type | Name in Code | Units | Input Type | Name in Code | Units |
+|------:|--------|-------------|-------------|-------------|-------------|
+| Velocity | Uinf_mph | miles per hour | Throttle | dT | 0-100% | 
+| Velocity | Uinf_fps | feet per second | Altitude | h_ft | feet | 
+| Velocity | Uinf_mps | meters per second | Altitude | h_m | meters | 
+| Velocity | Uinf_kmh | kilometers per hour | Density | rho_kgm3 | kg/m$`^3`$ |
+| Velocity | Uinf_kt | knots | Density | rho_slugft3 | slug/ft$`^3`$ |
+| State of Charge | SOC | 0-100% | Density | rho_lbft3 | lbm/ft$`^3`$ | 
+| Battery Cell Voltage | Voc | Volts | Runtime | t_s | seconds |
+| Runtime | t_m | minutes | Runtime | t_hr | hours |
+
+Velocity, throttle, altitude/density, and state of charge/cell voltage/runtime must all be specified as shown in [PointResult Example](#pointresult).
 
 ## Component initialization
 ```python
@@ -121,35 +135,23 @@ which prints the following to the console:
 > ```
 
 propQs is an array containing the following propulsion quantities,
-| Index | Symbol | Description | Units |
-|------:|--------|-------------|-------|
-| 0 | `T_N` | Total Thrust | N |
-| 1 | `T_lbf` | Total Thrust | lbf |
-| 2 | `T_g` | Total Thrust | g |
-| 3 | `T_oz` | Total Thrust | oz |
-| 4 | `Q_Nm` | Total Torque | N·m |
-| 5 | `Q_lbfft` | Total Torque | lbf·ft |
-| 6 | `RPM` | Propeller Speed | RPM |
-| 7 | `eta_drive` | Drive Efficiency | % |
-| 8 | `eta_p` | Propeller Efficiency | % |
-| 9 | `eta_g` | Gearing Efficiency | % |
-| 10 | `eta_m` | Motor Efficiency | % |
-| 11 | `eta_c` | ESC Efficiency | % |
-| 12 | `eta_b` | Battery Efficiency | % |
+| Index | Symbol | Description | Units | Index | Symbol | Description | Units |
+|------:|--------|-------------|-------|-------|-------|-------|-------|
+| 0 | `T_N` | Total Thrust | N | 14 | `Pin_m` | Electrical Power Into 1 Motor | W |
+| 1 | `T_lbf` | Total Thrust | lbf | 15 | `Pin_c` | Electrical Power Into 1 ESC | W |
+| 2 | `T_g` | Total Thrust | g | 16 | `Pw_m` | Waste Power in 1 Motor | W |
+| 3 | `T_oz` | Total Thrust | oz | 17 | `Pw_c` | Waste Power in 1 ESC | W |
+| 4 | `Q_Nm` | Total Torque | N·m | 18 | `Pw_b` | Waste Power in 1 Battery | W |
+| 5 | `Q_lbfft` | Total Torque | lbf·ft | 19 | `Im` | Current in 1 Motor | A |
+| 6 | `RPM` | Propeller Speed | RPM | 20 | `Ic` | Current in 1 ESC | A |
+| 7 | `eta_drive` | Drive Efficiency | % | 21 | `Ib` | Current in Battery | A |
+| 8 | `eta_p` | Propeller Efficiency | % | 22 | `Vm` | Voltage in 1 Motor | V |
+| 9 | `eta_g` | Gearing Efficiency | % | 23 | `Vc` | Voltage in 1 ESC | V |
+| 10 | `eta_m` | Motor Efficiency | % | 24 | `Vb` | Battery Voltage | V |
+| 11 | `eta_c` | ESC Efficiency | % | 25 | `Voc` | Voltage Per Cell | V |
+| 12 | `eta_b` | Battery Efficiency | % | 26 | `SOC` | State of Charge | % |
 | 13 | `Pout` | Mechanical Power Out of 1 Motor | W |
-| 14 | `Pin_m` | Electrical Power Into 1 Motor | W |
-| 15 | `Pin_c` | Electrical Power Into 1 ESC | W |
-| 16 | `Pw_m` | Waste Power in 1 Motor | W |
-| 17 | `Pw_c` | Waste Power in 1 ESC | W |
-| 18 | `Pw_b` | Waste Power in 1 Battery | W |
-| 19 | `Im` | Current in 1 Motor | A |
-| 20 | `Ic` | Current in 1 ESC | A |
-| 21 | `Ib` | Current in Battery | A |
-| 22 | `Vm` | Voltage in 1 Motor | V |
-| 23 | `Vc` | Voltage in 1 ESC | V |
-| 24 | `Vb` | Battery Voltage | V |
-| 25 | `Voc` | Voltage Per Cell | V |
-| 26 | `SOC` | State of Charge | % |
+
 
 <!--
 | Index | Symbol      | Description                                      | Units |
