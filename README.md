@@ -294,7 +294,7 @@ At some constant velocity, the right side bound of the contour plot indicates th
 			<p align="center">
 				<a>Efficiency for velocity vs throttle
           <pre>design.ContourPlot(propQ = 'eta_drive',
-                  Uinf_mps = np.linspace(0, 45, 200), 
+                  Uinf_mph = np.linspace(0, 120, 200), 
                   dT = np.linspace(20, 100, 200), 
                   h_m = 50, 
                   t_s = 20)</pre>
