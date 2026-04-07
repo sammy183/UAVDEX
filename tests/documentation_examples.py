@@ -43,30 +43,30 @@ design.Prop('16x10E') 					# add a propeller
 n = 120  
 
 # ContourPlot (sweeps of velocity and runtime)
-# design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
-#                    Uinf_mps = np.linspace(0, 45, n), 
-#                    t_s = np.linspace(0, 300, n),
-#                    dT = 100, 
-#                    h_m = 100)
+design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
+                   Uinf_mps = np.linspace(0, 45, n), 
+                   t_s = np.linspace(0, 300, n),
+                   dT = 100, 
+                   h_m = 100)
 
 #%% Additional contourplot
-# design.ContourPlot(propQ = 'eta_drive',
-#                   Uinf_mph = np.linspace(0, 120, 300), 
-#                   dT = np.linspace(20, 100, 300), 
-#                   h_m = 50, 
-#                   SOC = 80)
+design.ContourPlot(propQ = 'eta_drive',
+                  Uinf_mph = np.linspace(0, 120, 300), 
+                  dT = np.linspace(20, 100, 300), 
+                  h_m = 50, 
+                  SOC = 80)
 
-# design.ContourPlot(propQ = 'eta_drive',
-#                   Uinf_mps = np.linspace(0, 45, 200), 
-#                   dT = 100,
-#                   h_m = 50, 
-#                   Voc = np.linspace(3.5, 4.2, 200))
+design.ContourPlot(propQ = 'eta_drive',
+                  Uinf_mps = np.linspace(0, 45, 200), 
+                  dT = 100,
+                  h_m = 50, 
+                  Voc = np.linspace(3.5, 4.2, 200))
 
-# design.ContourPlot(propQ = 'eta_drive',
-#                   Uinf_mps = 30.0,
-#                   dT = np.linspace(20, 100, 200),
-#                   h_m = 50, 
-#                   Voc = np.linspace(3.5, 4.2, 200))
+design.ContourPlot(propQ = 'eta_drive',
+                  Uinf_mps = 30.0,
+                  dT = np.linspace(20, 100, 200),
+                  h_m = 50, 
+                  Voc = np.linspace(3.5, 4.2, 200))
 
 #%% Altitude Efficiency Examination
 n = 300
