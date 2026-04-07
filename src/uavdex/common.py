@@ -241,6 +241,9 @@ class PointDesign:
                              t_s, t_m, t_hr, SOC, Voc)
         if dT is not None:
             check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
+        else:
+            raise ValueError("dT input must be constant or array")
+
         if SOC is not None:
             check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
         check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
@@ -320,6 +323,9 @@ class PointDesign:
         # check bounds on input variables
         if dT is not None:
             check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
+        else:
+            raise ValueError("dT input must be constant or array")
+
         if SOC is not None:
             check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
         check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
@@ -414,6 +420,9 @@ class PointDesign:
         # check bounds on input variables
         if dT is not None:
             check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
+        else:
+            raise ValueError("dT must be constant or array")
+        
         if SOC is not None:
             check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
         check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
