@@ -316,15 +316,15 @@ At some constant velocity, the right side bound of the contour plot indicates th
 		</td>
 		<td width="33%" valign="top">
 			<p align="center">
-				<a>Efficiency for cell voltage vs throttle
+				<a>Efficiency for velocity vs altitude
            <pre>design.ContourPlot(propQ = 'eta_drive',
-                  Uinf_mps = 30.0,
-                  dT = np.linspace(20, 100, 200),
-                  h_m = 50, 
-                  Voc = np.linspace(3.5, 4.2, 200))</pre>
+                  Uinf_kt = np.linspace(0, 90, n),
+                  dT = 80,
+                  h_ft = np.linspace(0, 80000, n),
+                  t_s = 30)</pre>
         </a>
 			</p>
-			<img src="./Examples/ContourPlot_Voc_dT_eta.png">
+			<img src="./Examples/ContourPlot_V_h_eta.png">
 		</td>
 	</tr>
 </table>
