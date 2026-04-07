@@ -164,12 +164,12 @@ propQnames = ['Total Thrust (N)',
               'Total Torque (N-m)',
               'Total Torque (lbf-ft)',
               'RPM', 
-              'Drive Efficiency', 
-              'Propeller Efficiency', 
-              'Gearing Efficiency', 
-              'Motor Efficiency', 
-              'ESC Efficiency', 
-              'Battery Efficiency', 
+              'Drive Efficiency (%)', 
+              'Propeller Efficiency (%)', 
+              'Gearing Efficiency (%)', 
+              'Motor Efficiency (%)', 
+              'ESC Efficiency (%)', 
+              'Battery Efficiency (%)', 
               'Mech. Power Out of 1 Motor (W)', 
               'Elec. Power Into 1 Motor (W)', 
               'Elec. Power Into 1 ESC (W)', 
@@ -183,7 +183,7 @@ propQnames = ['Total Thrust (N)',
               'Voltage in 1 ESC (V)', 
               'Battery Voltage (V)', 
               'Voltage Per Cell (V)', 
-              'State of Charge']
+              'State of Charge (%)']
 propQshort = ['T_N', 'T_lbf', 'T_g', 'T_oz',
               'Q_Nm', 'Q_lbfft', 'RPM', 
               'eta_drive', 'eta_p', 'eta_g', 'eta_m', 'eta_c', 'eta_b', 
@@ -276,6 +276,8 @@ def bisectionBase(low, high, func, *args):
     else:
         # essentially error message
         return(-1.0)
+    
+# todo: implement newton for multivar op
 
 #%% ################### Data Parsing ###################
 def parse_coef_propeller_data(prop_name):
@@ -946,7 +948,7 @@ def SimpleRPMeqsBase_Voc(RPM, *args):
     CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
-    Ib = (Im*nmot)/eta_c
+    Ib = (dT*Im*nmot)/eta_c
     Vb = ns*Voc - Ib*Rb
     Vm = dT*Vb
     RPMcalc = KV*(Vm - Im*Rm)/GR
@@ -968,7 +970,7 @@ def SimpleRPMeqsBase_t(RPM, *args):
     CP = CPBase(RPM, J, rpm_list, coef_numba_prop_data)
     Qm = (rho*((RPM/60)**2)*(d**5)*CP)/(2*np.pi*GR*eta_g)
     Im = Qm*KV*(np.pi/30) + I0
-    Ib = (Im*nmot)/eta_c
+    Ib = (dT*Im*nmot)/eta_c
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)
     Vb = ns*VocFuncBase(SOC, batt_type_int) - Ib*Rb
     Vm = dT*Vb
@@ -1211,8 +1213,11 @@ def PointResultFunc(self, Uinf = None, dT = None,
     if not exactly_one_defined(rho, h):
         raise ValueError("Exactly one of h or rho must be provided")
     
+    # the following ensures that rho remains None if input as None
     if h is not None:
-        rho = atm().rho(h)
+        rho1 = atm().rho(h)
+    else:
+        rho1 = rho 
                 
     if t is not None: 
         # quick check for propeller viability
@@ -1223,11 +1228,11 @@ def PointResultFunc(self, Uinf = None, dT = None,
             eta_g = 0.94 # 94% gear efficiency assumed
         else:
             eta_g = 1.0
-        if RPMlowerlimit > SimpleRPMeqsBase_t(RPMlowerlimit, t, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+        if RPMlowerlimit > SimpleRPMeqsBase_t(RPMlowerlimit, t, Uinf, dT, rho1, eta_c, eta_g, *args)[0]:
             print('ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT')
             return(np.zeros(len(propQshort)))
             
-        propQs = SimplifiedRPMBase_t(Uinf, dT, rho, t, *args)
+        propQs = SimplifiedRPMBase_t(Uinf, dT, rho1, t, *args)
         if propQs[0] == 0.0:
             print(f'ERROR: Input t corresponds to SOC less than {100-self.ds:.0f}% from .Battery()')
             return(np.zeros(len(propQshort)))
@@ -1237,7 +1242,7 @@ def PointResultFunc(self, Uinf = None, dT = None,
             if SOC < 1 - self.ds/100:
                 print(f'ERROR: SOC input less than {100-self.ds:.0f}% from .Battery()')
                 return(np.zeros(len(propQshort)))
-            Voc = VocFuncBase(SOC, self.batt_type_int)
+            Voc1 = VocFuncBase(SOC, self.batt_type_int)
         else:
             # voc input, check that it maps to SOC between 0-1
             if Voc < VocFuncBase(1-self.ds/100, self.batt_type_int):
@@ -1246,6 +1251,7 @@ def PointResultFunc(self, Uinf = None, dT = None,
             elif Voc > VocFuncBase(1, self.batt_type_int):
                 print(f'ERROR: Input Voc for {self.BattType} corresponds to SOC > 100%')
                 return(np.zeros(len(propQshort)))
+            Voc1 = Voc
             
         # quick check for propeller viability
         Jmax = self.COEF_NUMBA_PROP_DATA[:, 0, :].max()
@@ -1255,28 +1261,29 @@ def PointResultFunc(self, Uinf = None, dT = None,
             eta_g = 0.94 # 94% gear efficiency assumed
         else:
             eta_g = 1.0
-        if RPMlowerlimit > SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+        if RPMlowerlimit > SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc1, Uinf, dT, rho1, eta_c, eta_g, *args)[0]:
             print('ERROR: Propeller data predicts zero thrust (high advance ratio). Reduce Uinf, t or increase dT')
             return(np.zeros(len(propQshort)))
         
-        propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args)
+        propQs = SimplifiedRPMBase_Voc(Uinf, dT, rho1, Voc1, *args)
         if propQs[0] == 0.0:
             print('ERROR: Infeasible input combination, try reducing runtime')
             return(np.zeros(len(propQshort)))
         
     if verbose:
-        # TODO: automate this, so it matches units and names with self.unit_idxs!
-        # TODO
-        # TODO
-        # TODO
-        # TODO
-        if t is not None:
-            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Runtime = {t:.1f} s')
-        elif SOC is not None and SOC > 0.0:
-            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, SOC = {SOC:.0f}%')
-        elif Voc is not None:
-            print(f'\nAt Uinf = {Uinf:.2f} m/s, Throttle = {dT*100:.0f}%, Density = {rho:.3f} kg/m\u00B3, Voc = {Voc:.2f} V')
-
+        # I apologize for the insane unit idx mechanism. Feel free to fix it!
+        # title string creation
+        [SOC, Voc, t, Uinf, dT, rho, h] = reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+        const_idxs = get_const_idx(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+        const_vals = get_const_vals(SOC, Voc, t, Uinf, dT, rho, h, self.unit_idxs)
+                
+        parts = []
+        validx = 0
+        for idx in const_idxs:
+            parts.append(f"{FullInputNamesShort[idx]} = {const_vals[validx]:.4g} {FullInputUnits[idx]}")
+            validx += 1
+        title_str =", ".join(parts)
+        print("At: " + title_str)
         for i, name in enumerate(propQnames):
             print(f'{name:30} = {propQs[i]:.3f}')
     return(np.array(propQs))
@@ -1467,7 +1474,7 @@ def LinePlotFunc(self, propQ = 'T',
         for propQspec in propQ:
             propqidx = propQshort.index(propQspec)
     
-            fig, ax = plt.subplots()#figsize = (7, 4), dpi = 300)
+            fig, ax = plt.subplots(layout="constrained")#figsize = (7, 4), dpi = 300)
             lines = ax.plot(inputarr, PropQs[:, propqidx], color = 'k', label= '_nolegend')
             plt.xlabel(FullInputNames[xname_idx])
             plt.ylabel(propQnames[propqidx])
@@ -1786,7 +1793,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         #  13      14     15    16     17    18  19  20  21  22  23  24   25   26
         # Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         for propQspec in propQ:
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(layout="constrained")
 
             propqidx = propQshort.index(propQspec)
             propQ_spec = output_array[:, :, propqidx]
