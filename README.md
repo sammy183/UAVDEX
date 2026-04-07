@@ -90,34 +90,34 @@ propQs = design.PointResult(Uinf_mps = 15, dT = 70, h_m = 50, t_s = 30,
 ```
 which prints the following to the console:
 > ```
-> At Uinf = 15.00 m/s, Throttle = 70%, Density = 1.219 kg/m³, Runtime = 30.0 s
-> Total Thrust (N)               = 49.204
-> Total Thrust (lbf)             = 11.062
-> Total Thrust (g)               = 5017.426
-> Total Thrust (oz)              = 176.984
-> Total Torque (N-m)             = 1.746
-> Total Torque (lbf-ft)          = 1.288
-> RPM                            = 6202.703
-> Drive Efficiency               = 38.587
-> Propeller Efficiency           = 65.074
-> Gearing Efficiency             = 100.000
-> Motor Efficiency               = 91.527
-> ESC Efficiency                 = 65.100
-> Battery Efficiency             = 99.519
-> Mech. Power Out of 1 Motor (W) = 567.097
-> Elec. Power Into 1 Motor (W)   = 619.593
-> Elec. Power Into 1 ESC (W)     = 951.756
-> Waste Power in 1 Motor (W)     = 52.497
-> Waste Power in 1 ESC (W)       = 332.163
-> Waste Power in 1 Battery (W)   = 9.193
-> Current in 1 Motor (A)         = 28.198
-> Current in 1 ESC (A)           = 30.321
-> Current in Battery (A)         = 60.641
-> Voltage in 1 Motor (V)         = 21.973
-> Voltage in 1 ESC (V)           = 31.390
-> Battery Voltage (V)            = 31.390
-> Voltage Per Cell (V)           = 3.943
-> State of Charge                = 84.687
+> At: t = 30 s, Uinf = 15 m/s, dT = 70 %, h = 50 m
+> Total Thrust (N)               = 51.281
+> Total Thrust (lbf)             = 11.528
+> Total Thrust (g)               = 5229.235
+> Total Thrust (oz)              = 184.456
+> Total Torque (N-m)             = 1.806
+> Total Torque (lbf-ft)          = 1.332
+> RPM                            = 6298.030
+> Drive Efficiency (%)           = 54.775
+> Propeller Efficiency (%)       = 64.581
+> Gearing Efficiency (%)         = 100.000
+> Motor Efficiency (%)           = 91.515
+> ESC Efficiency (%)             = 93.000
+> Battery Efficiency (%)         = 99.657
+> Mech. Power Out of 1 Motor (W) = 595.549
+> Elec. Power Into 1 Motor (W)   = 650.770
+> Elec. Power Into 1 ESC (W)     = 699.752
+> Waste Power in 1 Motor (W)     = 55.221
+> Waste Power in 1 ESC (W)       = 48.983
+> Waste Power in 1 Battery (W)   = 4.810
+> Current in 1 Motor (A)         = 29.138
+> Current in 1 ESC (A)           = 21.932
+> Current in Battery (A)         = 43.864
+> Voltage in 1 Motor (V)         = 22.334
+> Voltage in 1 ESC (V)           = 31.905
+> Battery Voltage (V)            = 31.905
+> Voltage Per Cell (V)           = 4.002
+> State of Charge (%)            = 88.923
 > ```
 
 propQs is an array containing the following propulsion quantities,
