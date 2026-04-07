@@ -98,7 +98,7 @@ Battery constants:  CB (mAh), ns (number of cells in series), Rb (Ohm)
 
 ESC constants (Saemi):      Rds (Ohm), fPWM (Hz), Tsd (s), Psb (W)   <---- currently defaults from Saemi 2023 are used
 ESC constants (Gong):       a_m (the slope of constant a), a_0 (y intercept), b, c_m, c_0  <---- only available for a very limited selection of tested ESCs
-ESC constnats (Jeong):       #TODO FILL IN JEONG CONSTANTS
+ESC constants (Jeong):       #TODO FILL IN JEONG CONSTANTS
     
 KV = speed constant, I0 = no-load current, Rm = motor resistance
 CB = battery capacity, ns = number of cells (in series), Rb = battery resistance
@@ -134,9 +134,12 @@ Simplified RPM formulation (known runtime (t), constant current):
 minimize res!
 
 This formulation is advantageous for its computational efficiency. With only one variable, plots can be made extremely quickly.
-Significant loss of accuracy due to the constant I0 assumption compared to the other models.
+Loss of accuracy due to the constant I0 assumption is minimal compared to the other models.
 
-    
+# TODO: implement Rb as a function of SOC using:
+Rb = 21*(e_battcell**(-0.8065) from Jeong 2020
+in theory, take Voc as input with known total CB, ns_batt, np_batt --> return Rb
+
 @author: NASSAS
 """
 
@@ -766,7 +769,7 @@ def SimplifiedRPM_Voc(Uinf, dT, rho, Voc, args):
     eta_p = (CT*J)/CP
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
-    eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
+    eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb))
     eta_drive = (eta_p*eta_g*eta_m*eta_c)*eta_b
     
     T =     nmot*rho*((RPM/60)**2)*(d**4)*CT
@@ -867,7 +870,7 @@ def SimplifiedRPM_t(Uinf, dT, rho, t, args):
     eta_p = (CT*J)/CP
     eta_m = Pout/Pin_m 
     eta_c = Pin_m/Pin_c 
-    eta_b = 1.0 - (Ib**2)*Rb/(nmot*Pin_c + ((Ib**2)*Rb))
+    eta_b = 1.0 - ((Ib**2)*Rb)/(nmot*Pin_c + ((Ib**2)*Rb))
     eta_drive = (eta_p*eta_g*eta_m*eta_c)*eta_b
     
     SOC = 1.0 - (Ib*t)/(3.6*CB*np_batt)

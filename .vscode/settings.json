@@ -4,5 +4,6 @@
   "python.testing.pytestEnabled": true,
   "python.envFile": "${workspaceRoot}/vscode.env",
   "python-envs.defaultEnvManager": "ms-python.python:conda",
-  "python-envs.defaultPackageManager": "ms-python.python:conda"
+  "python-envs.defaultPackageManager": "ms-python.python:conda",
+  "editor.inlineSuggest.enabled": false,
 }
