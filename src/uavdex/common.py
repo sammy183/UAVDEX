@@ -177,7 +177,10 @@ class PointDesign:
         '''
         prop_name is a string with the form 16x10E, 12x12 (no PER3_ or .dat for useability'''
         self.prop_name = prop_name
-        self.COEF_PROP_DATA, self.COEF_NUMBA_PROP_DATA = parse_coef_propeller_data(prop_name)
+        try:
+            self.COEF_PROP_DATA, self.COEF_NUMBA_PROP_DATA = parse_coef_propeller_data(prop_name)
+        except:
+            raise ValueError('Propeller not recognized, please call .PropellerOptions() or .OpenPropellerData()')
         self.rpm_list = np.array(self.COEF_PROP_DATA['rpm_list'])
         self.propdiam = float(prop_name.split('x')[0])*0.0254 # convert inches to m
         self.prop = True

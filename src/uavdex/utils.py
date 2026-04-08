@@ -91,7 +91,7 @@ def input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
         t = t_m*m2s
         unitconv_idx.append(3)
     elif t_hr is not None:
-        t = t_hr*hr2m
+        t = t_hr*hr2m*m2s
         unitconv_idx.append(4)
     else:
         t = None
