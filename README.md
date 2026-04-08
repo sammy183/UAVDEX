@@ -206,7 +206,7 @@ design.LinePlot(propQ = ['T_lbf','eta_drive','Ib'],
                 Uinf_mph = np.linspace(0, 100), 
                 dT = 100, h_m = 100, t_s = 30)
 ```
-This code opens the plots below. Datatips pop up when clicking anywhere along the line. 
+This code opens the plots below. Datatips pop up when clicking anywhere along the line in an interactive viewer (see [Python IDE notes](#notes-on-python-ide-usage)).
 <table>
 	<tr>
 		<td width="33%" valign="top">
@@ -330,6 +330,11 @@ At some constant velocity, the right side bound of the contour plot indicates th
 </table>
 The bounds on these plots occur when the throttle setting and battery voltage are low, meaning the propulsion drive cannot produce thrust at the given velocity. Therefore, efficiency goes to zero.
 
+### Notes on Python IDE usage
+- *VSCode*:     The best IDE for viewing UAVDEX plots and using the built-in datatips. No changes necessary.
+- *PyCharm*:    "Settings > Tools > Python Plots > Show plots in tool window" should be unchecked for interactive datatips.
+- *Spyder*:     Switch plot renderer from inline to QT. If the computer has a 4k screen, the text will be extremely small unless "Tools > Preferences > Application > Interface > Enable Auto High DPI Scaling" is selected. 
+- *Jupyter*:    Displays static plots but it cannot support interactive datatips at this time.
 
 ## Future updates
 1. Automatic boundary selection (no input array needed, just specify which variable is the sweep)
@@ -343,6 +348,7 @@ Have any requests? Submit a ticket on the google form below or open a github iss
 
 Want a propulsion component added to the default package CSV sheets? Request here:
 #### TODO: GOOGLE FORM
+
 
 <!--
 ### Primary Objects:
