@@ -148,7 +148,6 @@ from numpy.polynomial import Polynomial
 import matplotlib.pyplot as plt
 from matplotlib import patheffects
 import mplcursors # wonderful package
-# from tqdm import tqdm
 from numba import njit
 import copy
 from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm 
@@ -157,7 +156,8 @@ from uavdex.utils import exactly_one_defined, reverse_input_conversion, get_arra
 import warnings
 warnings.filterwarnings("ignore", message="Pick support for QuadMesh")
 warnings.filterwarnings("ignore", message="No artists with labels found to put in legend")
-
+import atexit
+_show_plots = False
 
 global propQnames, propQshort, propQunit, FullInputNames, FullInputNamesShort, FullInputUnits
 propQnames = ['Total Thrust (N)',
@@ -1357,7 +1357,8 @@ def LinePlotFunc(self, propQ = 'T',
         
         and rows corresponding to a range of the nonconstant value
     '''
-    
+    global _show_plots
+
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns_batt, self.np_batt, self.CB, self.Rb, self.batt_type_int, 
             self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
@@ -1477,7 +1478,7 @@ def LinePlotFunc(self, propQ = 'T',
         for propQspec in propQ:
             propqidx = propQshort.index(propQspec)
     
-            fig, ax = plt.subplots(layout="constrained")#figsize = (7, 4), dpi = 300)
+            fig, ax = plt.subplots(num=None, layout="constrained")#figsize = (7, 4), dpi = 300)
             lines = ax.plot(inputarr, PropQs[:, propqidx], color = 'k', label= '_nolegend')
             plt.xlabel(FullInputNames[xname_idx])
             plt.ylabel(propQnames[propqidx])
@@ -1568,8 +1569,10 @@ def LinePlotFunc(self, propQ = 'T',
             plt.legend()
             plt.grid()
             plt.minorticks_on()
-        plt.show()
-        
+        # plt.show()
+        if not _show_plots:
+            atexit.register(plt.show)
+            _show_plots = True
     return(PropQs, inputarr)
 
 #%% ContourPlot
@@ -1653,6 +1656,8 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         Might be confusing why input_names is in a different order compared to LinePlot. That's to provide
         better xaxis, yaxis selection by default (time on horizontal axis, altitude on vertical, etc)
     '''
+    global _show_plots
+
     if verbose:
         print('Compiling code (please wait ~15s)...')
     
@@ -1796,7 +1801,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
         #  13      14     15    16     17    18  19  20  21  22  23  24   25   26
         # Pout, Pin_m, Pin_c, Pw_m   Pw_c  Pw_b  Im, Ic, Ib, Vm, Vc, Vb, Voc, SOC
         for propQspec in propQ:
-            fig, ax = plt.subplots(layout="constrained")
+            fig, ax = plt.subplots(num=None, layout="constrained")
 
             propqidx = propQshort.index(propQspec)
             propQ_spec = output_array[:, :, propqidx]
@@ -1876,9 +1881,12 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
                 extra = ''
             plt.title(f'{FullInputNames[xname_idx]}, {FullInputNames[yname_idx]} sweeps; {title_str}' + f'\n{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery')
             plt.minorticks_on()
-        plt.show()
+        # plt.draw()
+        if not _show_plots:
+            atexit.register(plt.show)
+            _show_plots = True
+
         
-    
     # output array = (n, n, len(propQshort)) where (:, 0, 0) corresponds to y and (0, :, :) corresponds to x
     # return xarr, yarr, output
     return(x_array, y_array, output_array)
