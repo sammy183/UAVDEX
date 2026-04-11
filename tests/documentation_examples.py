@@ -86,47 +86,61 @@ design.ContourPlot(propQ = ['eta_drive', 'eta_p', 'eta_m', 'RPM', 'Q_Nm'],
 # dT_const = 80
 # h_arr = np.linspace(0, 80000, n)
 # h_const = 100
+# CD = None#0.045
+# Sw_m2 = None#0.81
 # cases = [{"propQ":"eta_drive",
 #           "t_s":t_arr,
 #           "Uinf_mps":Uinf_arr, 
 #           "dT":dT_const,
 #           "h_ft":h_const,
-#           "plot":plot},
+#           "plot":plot,
+#           "CD":CD,
+#           "Sw_m2":Sw_m2},
          
 #           {"propQ":"eta_drive",
 #         "t_s":t_arr,
 #         "Uinf_mps":Uinf_const, 
 #         "dT":dT_arr,
 #         "h_ft":h_const,
-#         "plot":plot},
+#         "plot":plot,
+#         "CD":CD,
+#         "Sw_m2":Sw_m2},
          
 #           {"propQ":"eta_drive",
 #         "t_s":t_arr,
 #         "Uinf_mps":Uinf_const, 
 #         "dT":dT_const,
 #         "h_ft":h_arr,
-#         "plot":plot},
+#         "plot":plot,
+#         "CD":CD,
+#         "Sw_m2":Sw_m2},
          
 #           {"propQ":"eta_drive",
 #         "t_s":t_const,
 #         "Uinf_mps":Uinf_arr, 
 #         "dT":dT_arr,
 #         "h_ft":h_const,
-#         "plot":plot},
+#         "plot":plot,
+#         "CD":CD,
+#         "Sw_m2":Sw_m2},
          
 #           {"propQ":"eta_drive",
 #         "t_s":t_const,
 #         "Uinf_mps":Uinf_arr, 
 #         "dT":dT_const,
 #         "h_ft":h_arr,
-#         "plot":plot},
+#         "plot":plot,
+#         "CD":CD,
+#         "Sw_m2":Sw_m2},
          
 #           {"propQ":"eta_drive",
 #         "t_s":t_const,
 #         "Uinf_mps":Uinf_const, 
 #         "dT":dT_arr,
 #         "h_ft":h_arr,
-#         "plot":plot}
+#         "plot":plot,
+#         "CD":CD,
+#         "Sw_m2":Sw_m2}
 #     ]
 # for i, case in enumerate(cases):
 #         _, _, _ = design.ContourPlot(**case)

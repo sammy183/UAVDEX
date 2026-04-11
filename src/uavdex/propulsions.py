@@ -1623,6 +1623,8 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
                     rho = None, h = None, 
                     SOC = None, Voc = None, t = None, 
                     verbose = True, plot = False,
+                    CD = None,
+                    Sw = None,
                     colormap = 'viridis', 
                     grade = 15):
     '''
@@ -1849,6 +1851,13 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
                 if Mtip.any() >= 0.8:
                     Mtiplimitline = ax.contour(X, Y, Mtip, colors = 'xkcd:sky blue', levels = np.array([0.8]))
                     ax.clabel(Mtiplimitline, inline = inlinelabel, fmt=lambda v: f'{v:.2f}')
+
+            # T = D contour line
+            if Sw is not None and CD is not None:
+                D = 0.5*rho_grid*(Uinf_grid**2)*CD*Sw
+                T_N_out = output_array[:, :, 0]
+                TDequaline = ax.contour(X, Y, T_N_out - D, colors = '#cc0000', levels = [0.0])
+                ax.clabel(TDequaline, inline = inlinelabel, fmt=lambda v: 'T = D')
 
             # properly need to get xname, yname indices corresponding to FullInputNames!
             plt.xlabel(FullInputNames[xname_idx])

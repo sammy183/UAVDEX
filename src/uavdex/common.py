@@ -131,7 +131,10 @@ class PointDesign:
             batt_data = df.loc[df['Name'] == self.batt_name]
         except:
             raise ValueError('Battery name not recognized; please call .BatteryOptions() or .OpenBatteryData()')
-        self.ns_batt = batt_data['Series Cell Count'].values[0]
+        try:
+            self.ns_batt = batt_data['Series Cell Count'].values[0]
+        except:
+             raise ValueError('Battery does not have data; please call .BatteryOptions() or .OpenBatteryData()')
         self.np_batt = batt_data['Parallel Cell Count'].values[0]
         self.CB = batt_data['Capacity (mAh)'].values[0]
         self.Rb = batt_data['Resistance (Ohm)'].values[0]
@@ -359,6 +362,7 @@ class PointDesign:
                     dT = None,
                     h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
                     SOC = None, Voc = None, t_s = None, t_m = None, t_hr = None,
+                    CD = None, Sw_ft2 = None, Sw_m2 = None,
                     verbose = True, plot = True):
         '''
         Input
@@ -388,6 +392,12 @@ class PointDesign:
             constant values for two of: 
                 Uinf, dT, rho/h, SOC/Voc/t
             equal size np.arrays for the other two values
+
+            OPTIONALLY: 
+                CD (drag coefficient)
+            and
+                Sw (reference wing area)
+            which will plot a line of T = D on the plot
                         
         IMPORTANT: 
             bounds on ranges: dT in (0.2, 1), rho >= 0, h >= 0, SOC in (0, 1), Voc in (2.0, 4.2), t >= 0
@@ -414,6 +424,20 @@ class PointDesign:
             raise ValueError("Only one altitude/air density can be input")
         elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
             raise ValueError("Only one of SOC, Voc, and runtime can be input")
+        elif Sw_ft2 is not None and Sw_m2 is not None:
+            raise ValueError('Only one reference area, Sw_ft2 or Sw_m2, can be input')
+    
+        if CD is not None and (Sw_ft2 is None and Sw_m2 is None):
+            raise ValueError('For T = D contour, Sw must also be provided (input neither to avoid this error)')
+        elif (Sw_ft2 is not None or Sw_m2 is not None) and CD is None:
+            raise ValueError("For T = D contour, CD must also be provided (input neither to avoid this error)")
+        
+        if Sw_ft2 is not None:
+            Sw = Sw_ft2*ft22m2
+            self.Sw_convert = 1
+        else:
+            Sw = Sw_m2
+            self.Sw_convert = 0
         
         Uinf, dT, rho, h, t, SOC, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
                              dT,
@@ -450,6 +474,7 @@ class PointDesign:
         return(ContourPlotFunc(self, propQ = propQ, 
                                Uinf = Uinf, dT = dT, 
                                rho = rho, h = h, SOC = SOC, Voc = Voc, t = t, 
+                               CD = CD, Sw = Sw,
                                verbose = verbose, plot = plot))
     
     def shortenerror(self):
