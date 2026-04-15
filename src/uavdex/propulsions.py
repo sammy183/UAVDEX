@@ -76,8 +76,7 @@ this data does not extend into the high performance ranges (say RPMs of 6k-12k f
 
 As of 8/29/2025, this experimental data is not implemented yet, but in the future it will be used in conjunction with the APC data for a mixed fidelity approach.
 
-
-Model Formulation (primary based on Saemi 2023, secondary if available data based on Gong 2018):
+Model Formulation:
     Simplified RPM (with constant ESC efficiency and constant I0)
     SAEMI 2023: https://www.mdpi.com/2226-4310/11/1/16
     GONG 2018:  https://www.researchgate.net/profile/Andrew-Gong-2/publication/326263042
