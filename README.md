@@ -10,15 +10,13 @@ The tools to thoughtfully design aircraft should be accessible to all.
   <i>Example analyses using UAVDEX</i>
 </p>
 <p align="center">
-  <img src="./Examples/LinePlot_V_T.png" width="32%">
-  <img src="./Examples/LinePlot_V_eta.png" width="32%">
-  <img src="./Examples/LinePlot_V_Ib.png" width="32%">
+  <img src="./Examples/LinePlot_V_eta.png" width="48%">
+  <img src="./Examples/LinePlot_V_Ib.png" width="48%">
 </p>
 
 <p align="center">
-  <img src="./Examples/ContourPlot_V_t_T.png" width="32%">
-  <img src="./Examples/ContourPlot_V_t_eta.png" width="32%">
-  <img src="./Examples/ContourPlot_V_dT_eta.png" width="32%">
+  <img src="./Examples/ContourPlot_V_t_T.png" width="48%">
+  <img src="./Examples/ContourPlot_V_dT_eta.png" width="48%">
 </p>
 
 <!--
@@ -30,6 +28,7 @@ Anaconda is recommended. In anaconda prompt with a desired environment (not base
 ```python
 pip install uavdex
 ```
+
 # PointDesign
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
 
@@ -46,7 +45,7 @@ Runtime assumes constant current. This is valid when designing an aircraft that 
 The inputs support most common units including
 
 | Input Type | Name in Code | Units | Input Type | Name in Code | Units |
-|------:|--------|-------------|-------------|-------------|-------------|
+|:------|:--------|:-------------|:-------------|:-------------|:-------------|
 | Velocity | Uinf_mph | miles per hour | Throttle | dT | 0-100% | 
 | Velocity | Uinf_fps | feet per second | Altitude | h_ft | feet | 
 | Velocity | Uinf_mps | meters per second | Altitude | h_m | meters | 
