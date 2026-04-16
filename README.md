@@ -63,7 +63,7 @@ import uavdex as ud
 
 design = ud.PointDesign() 			                    # initialize PointDesign object
 design.Motor('C-4130/20', nmot = 2)                     # add a motor, and specify the # of motors (nmot = 1 by default)
-design.Battery('Gaoneng_8S_3300', discharge = 85)     # add a battery, and specify the maximum discharge (default is 80%)
+design.Battery('Gaoneng_8S_3300', discharge = 85)       # add a battery, and specify the maximum discharge (default is 80%)
 design.Prop('16x10E')                                   # add a propeller
 ```
 To view and edit the databases use 
