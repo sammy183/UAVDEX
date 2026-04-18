@@ -66,7 +66,9 @@ design.ContourPlot(propQ = 'eta_drive',
                   Uinf_mps = 30.0,
                   dT = np.linspace(20, 100, 200),
                   h_m = 50, 
-                  Voc = np.linspace(3.5, 4.2, 200))
+                  Voc = np.linspace(3.5, 4.2, 200),
+                  CD = 0.03,
+                  Sw_m2 = 0.65)
 
 #%% Altitude Efficiency Examination
 n = 300
