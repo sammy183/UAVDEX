@@ -338,8 +338,11 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 1. Automatic boundary selection (no input array needed, just specify which variable is the sweep)
 2. Battery resistance near low SOC modeled
 3. Manual limit lines based on component values (i.e. ESC waste power < 500 W)
-4. Expansion of database features
-5. Functions for the best Uinf, dT, h for maximum efficiency
+4. Functions for the best Uinf, dT, h for maximum efficiency
+5. Steady state mission simulation for DBF laps
+6. Manual switching between UIUC exp data, APC BEMT, and custom data
+7. QPROP integration for arbitary propellers
+8. Setup pareto fronts
 
 Have any requests? Submit a ticket on the google form below or open a github issue thread.
 #### TODO: GOOGLE FORM
