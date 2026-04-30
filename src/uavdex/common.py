@@ -480,23 +480,38 @@ class PointDesign:
     def shortenerror(self):
         return(None)
     
-
-    def Runtimes(self, Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
-                dT = None,
+    def Runtimes(self, Uinf_units = 'mph', t_units = 's',
                 h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
-                SOC = None, Voc = None, t_s = None, t_m = None, t_hr = None,
                 CD = None, Sw_ft2 = None, Sw_m2 = None,
-                verbose = True, plot = True):
+                t_limit = False,
+                plot = True):
+        """
+        Creates a plot of maximum runtimes against Uinf for a variety of throttles
+
+        t_limit limits the runtimes shown on the plot
+
+        Uinf_units can be any of the following strings: 
+            'mph' (miles per hour; DEFAULT) 
+            'mps' (meters per second) 
+            'fps' (feet per second)
+            'kmh' (kilometers per hour)
+            'kt'  (knots)
+        t_units can be any of the following strings: 
+            's'   (seconds; DEFAULT)
+            'm'   (minutes)
+            'hr'  (hours)
         
-        # if exactly_one_defined(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt) == False:
-        #     raise ValueError("Only one velocity can be input")
-        # elif exactly_one_defined(h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3) == False:
-        #     raise ValueError("Only one altitude/air density can be input")
-        # elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
-        #     raise ValueError("Only one of SOC, Voc, and runtime can be input")
-        # elif Sw_ft2 is not None and Sw_m2 is not None:
-        #     raise ValueError('Only one reference area, Sw_ft2 or Sw_m2, can be input')
-    
+        altitude or air density are input as
+            h_m                 (altitude, meters)
+                or h_ft         (altitude, feet)
+                or rho_kgm3     (air density, kg/m^3)
+                or rho_slugft3  (air density, slugs/ft3)
+                or rho_lbft3    (air density, lbm/ft3)
+
+        """
+        if exactly_one_defined(h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3) == False:
+            raise ValueError("Please input only one altitude/air density out of h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3")
+
         if CD is not None and (Sw_ft2 is None and Sw_m2 is None):
             raise ValueError('For T = D contour, Sw must also be provided (input neither to avoid this error)')
         elif (Sw_ft2 is not None or Sw_m2 is not None) and CD is None:
@@ -508,26 +523,45 @@ class PointDesign:
         else:
             Sw = Sw_m2
             self.Sw_convert = 0
-        
-        # Uinf, dT, rho, h, t, SOC, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
-        #                      dT,
-        #                      h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
-        #                      t_s, t_m, t_hr, SOC, Voc)
-        
-        # # check bounds on input variables
-        # if dT is not None:
-        #     check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
-        # else:
-        #     raise ValueError("dT must be constant or array")
-        
-        # if SOC is not None:
-        #     check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
-        # check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
-        # check(h,        0.0,    np.inf,     "h") # lambda x: x >= 0.0,
-        # check(Voc,      2.0,    4.2,        "Voc") # lambda x: (x >= 2.0) & (x <= 4.2)
-        # check(t,        0.0,    np.inf,     "t") # lambda x: x >= 0.0
 
-        return(RuntimePlot(self, CD = CD, Sw = Sw))
+        # this is to ensure the idxs can be matched up for plotting
+        Uinf_mps = None
+        Uinf_mph = None
+        Uinf_fps = None
+        Uinf_kmh = None
+        Uinf_kt = None
+        dT = None
+        t_s = None
+        t_m = None
+        t_hr = None
+        SOC = None
+        Voc = None
+        if Uinf_units == 'mps':
+            Uinf_fps = 1
+        elif Uinf_units == 'mph':
+            Uinf_mph = 1
+        elif Uinf_units == 'fps':
+            Uinf_fps = 1
+        elif Uinf_units == 'kmh':
+            Uinf_kmh = 1
+        elif Uinf_units == 'kt':
+            Uinf_kt = 1
+        else:
+            raise ValueError('Uinf_units not recognized! Please choose one of: mps, mph, fps, kmh, kt')
+        if t_units == 's':
+            t_s = 1
+        elif t_units == 'm':
+            t_m = 1
+        elif t_units == 'hr':
+            t_hr = 1
+        _, _, rho, h, _, _, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+                        dT,
+                        h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
+                        t_s, t_m, t_hr, SOC, Voc)
+        check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
+        check(h,        0.0,    np.inf,     "h") # lambda x: x >= 0.0,
+
+        return(RuntimePlot(self, rho = rho, h = h, CD = CD, Sw = Sw, plot = plot, t_limit=t_limit))
 
         
 #%%

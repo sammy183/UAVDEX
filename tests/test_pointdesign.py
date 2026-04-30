@@ -384,16 +384,27 @@ class TestContourPlot(unittest.TestCase):
 class TestRuntimes(unittest.TestCase):
     def setUp(self):
         self.design = PointDesign()
-        self.design.Motor('C-4130/20', nmot = 1)
+        self.design.Motor('C-4130/20', nmot = 2)
         self.design.Battery('Gaoneng_8S_3300')
-        self.design.Prop('18x12E')
+        self.design.Prop('16x10E')
     
     def test_runtime_plot(self):
-        plot = True
-        # self.design.Runtimes()
-        # self.design.Runtimes(CD = 0.03)
-        self.design.Runtimes(CD = 0.03, Sw_ft2 = 6)
+        self.design.Runtimes(h_ft = 50)
+        self.design.Runtimes(h_m = 50, CD = 0.05, Sw_ft2 = 9)
 
+        # simpler to keep it as a semi-contour plot
+        # self.design.ContourPlot(propQ = ['T_lbf', 'Ib', 'runtime'],
+        #                         Uinf_mps = np.linspace(0, 45, 150), 
+        #                         dT = np.linspace(40, 100, 150), 
+        #                         h_m = 50, 
+        #                         t_s = 5,
+        #                         CD = 0.05, Sw_ft2 = 9)
+        # self.design.ContourPlot(propQ = ['T_lbf', 'Ib', 'runtime'],
+        #                         Uinf_mps = np.linspace(0, 45, 150), 
+        #                         dT = np.linspace(40, 100, 150), 
+        #                         h_m = 50, 
+        #                         t_s = 200,
+        #                         CD = 0.05, Sw_ft2 = 9)
 
 if __name__ == '__main__':
     unittest.main()
