@@ -1874,7 +1874,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
             #     if isinstance(val, np.ndarray):
             #         continue  # skip arrays
             #     parts.append(f"{name} = {val}")
-            # title_str = ", ".join(parts)
+            # title_str = ", ".join(part)
             
             # add constants to title string with proper units!
             parts = []
@@ -1898,3 +1898,82 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
     # output array = (n, n, len(propQshort)) where (:, 0, 0) corresponds to y and (0, :, :) corresponds to x
     # return xarr, yarr, output
     return(x_array, y_array, output_array)
+
+
+#%%################################# Specialized Functions #################################
+def MaxUinf(self, dT, rho, Voc, Uinfupper = 343, Uinflower = 0):
+    """
+    Find maximum Uinf for the SimpleRPM model to converge
+    Uinfupper bound from Mach 1 at SSL --> 343 m/s
+    Uinflower bound from 0 (assume no reverse airspeed)
+    """
+    args = (dT, rho, Voc, self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
+        self.ns_batt, self.np_batt, self.CB, self.Rb, self.batt_type_int, 
+        self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
+    
+    def residualfunc(Uinf, args):
+        function_output = SimplifiedRPMBase_Voc(Uinf, *args)
+        return(function_output[0] - 1e-10) # to avoid the exact zero!
+    Uinfmax = bisectionBase(Uinflower, Uinfupper, residualfunc, args)
+    return(Uinfmax)
+
+def RuntimePlot(self, CD = None, Sw = None, n = 100):
+    """
+    Plot contour lines of throttle (from 30-100) against a t vs V design space
+
+    TODO: lets figure out the structure
+    - define the prop system
+    - input h
+    - input Uinf (can I automate?)
+    - find end times at maxds
+
+    functions needed:
+    1. Find maximum/minimum Uinf (set by prop setup)
+    2. find end runtime t from SimplifiedRPM_Voc(Uinf, dT, Voc, h) <-- Voc corresponding to self.ds!
+
+    """
+
+    args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
+        self.ns_batt, self.np_batt, self.CB, self.Rb, self.batt_type_int, 
+        self.KV, self.Rm, self.I0, self.nmot, self.ds/100)
+
+    rho = 1.225 # kg/m3
+    Vocmax = VocFuncBase(1.0, self.batt_type_int)
+
+    plt.figure()
+    for dT in np.linspace(0.3, 1.0, 8):
+
+        # get Umax from SOC = 1.0
+        Uinfmax = MaxUinf(self, dT, rho, Vocmax)
+
+        # Collect runtimes at maximum discharge
+        Uinfs = np.linspace(0, Uinfmax, n)
+        Voc = VocFuncBase(1.0-self.ds/100, self.batt_type_int)
+        data = np.zeros((n, len(propQshort)))
+        for i, Uinfspec in enumerate(Uinfs):
+            outs = SimplifiedRPMBase_Voc(Uinfspec, dT, rho, Voc, *args)
+            data[i, :] = outs
+        Ibs = data[:, 21]
+        T_Ns = data[:, 0]
+        runtimes = (self.ds/100)*(3.6*self.CB*self.np_batt)/Ibs#[Ibs > 0]
+
+        # Uinfs = Uinfs[Ibs > 0]
+        plt.plot(Uinfs, runtimes, label = f'dT = {dT*100:.0f}')
+        if Sw is not None and CD is not None:
+            Ds = 0.5*rho*(Uinfs**2)*CD*Sw
+
+            # Find Uinf, Runtime where T = D 
+            diff = T_Ns - Ds
+            sign_changes = np.where(np.diff(np.sign(diff)) != 0)[0]
+            Uinf_pair = Uinfs[sign_changes[0]:sign_changes[0]+2]
+            TD_pair = diff[sign_changes[0]:sign_changes[0]+2]
+            Uinf_TD = np.interp(0.0, TD_pair, Uinf_pair)
+            runtime_TD = np.interp(Uinf_TD, Uinf_pair, runtimes[sign_changes[0]:sign_changes[0]+2])
+
+            plt.plot(Uinf_TD, runtime_TD, "o", color = '#cc0000')
+
+    plt.xlabel('Velocity (m/s)')
+    plt.ylabel('Runtime (s)')
+    plt.legend()
+    # plt.ylim([0, 500])
+    plt.show()

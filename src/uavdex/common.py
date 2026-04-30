@@ -479,6 +479,57 @@ class PointDesign:
     
     def shortenerror(self):
         return(None)
+    
+
+    def Runtimes(self, Uinf_mps = None, Uinf_mph = None, Uinf_fps = None, Uinf_kmh = None, Uinf_kt = None,
+                dT = None,
+                h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
+                SOC = None, Voc = None, t_s = None, t_m = None, t_hr = None,
+                CD = None, Sw_ft2 = None, Sw_m2 = None,
+                verbose = True, plot = True):
+        
+        # if exactly_one_defined(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt) == False:
+        #     raise ValueError("Only one velocity can be input")
+        # elif exactly_one_defined(h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3) == False:
+        #     raise ValueError("Only one altitude/air density can be input")
+        # elif exactly_one_defined(SOC, Voc, t_s, t_m, t_hr) == False:
+        #     raise ValueError("Only one of SOC, Voc, and runtime can be input")
+        # elif Sw_ft2 is not None and Sw_m2 is not None:
+        #     raise ValueError('Only one reference area, Sw_ft2 or Sw_m2, can be input')
+    
+        if CD is not None and (Sw_ft2 is None and Sw_m2 is None):
+            raise ValueError('For T = D contour, Sw must also be provided (input neither to avoid this error)')
+        elif (Sw_ft2 is not None or Sw_m2 is not None) and CD is None:
+            raise ValueError("For T = D contour, CD must also be provided (input neither to avoid this error)")
+        
+        if Sw_ft2 is not None:
+            Sw = Sw_ft2*ft22m2
+            self.Sw_convert = 1
+        else:
+            Sw = Sw_m2
+            self.Sw_convert = 0
+        
+        # Uinf, dT, rho, h, t, SOC, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
+        #                      dT,
+        #                      h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
+        #                      t_s, t_m, t_hr, SOC, Voc)
+        
+        # # check bounds on input variables
+        # if dT is not None:
+        #     check(dT*100,   10,     100,        "dT (%)") # lambda x: (x >= 0.1) & (x <= 1.0)
+        # else:
+        #     raise ValueError("dT must be constant or array")
+        
+        # if SOC is not None:
+        #     check(SOC*100,  100-self.ds,      100,        "SOC (%)") # lambda x: (x >= 0.05) & (x <= 1.0)
+        # check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
+        # check(h,        0.0,    np.inf,     "h") # lambda x: x >= 0.0,
+        # check(Voc,      2.0,    4.2,        "Voc") # lambda x: (x >= 2.0) & (x <= 4.2)
+        # check(t,        0.0,    np.inf,     "t") # lambda x: x >= 0.0
+
+        return(RuntimePlot(self, CD = CD, Sw = Sw))
+
+        
 #%%
     # #############################################################################
     # #############################################################################

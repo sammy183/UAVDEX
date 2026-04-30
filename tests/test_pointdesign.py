@@ -380,39 +380,20 @@ class TestContourPlot(unittest.TestCase):
                     verbose=True,
                     **case
                 )
-            
-            # {"propQ":'eta_drive', 
-            #  "Uinf_mps":np.linspace(0, 30, n), "t_s": np.linspace(0, 800, n), 
-            #  "h_m":50, "dT":100, "plot":plot},
-            # {"propQ":'eta_drive', 
-            #  "Uinf_mps":np.linspace(0, 50, n), "t_s":30, 
-            #  "h_m":50, "dT":np.linspace(40, 100, n), "plot":plot},
-            # {"propQ":'eta_drive', 
-            #  "Uinf_mps":np.linspace(0, 35, n), "t_s":30, 
-            #  "h_m":np.linspace(0, 30000, n), "dT":80, "plot":plot},
-            # {"propQ":'eta_drive', 
-            #  "Uinf_mps":25, "t_s":np.linspace(0, 300, n), 
-            #  "h_m":np.linspace(0, 30000, n), "dT":80, "plot":plot},
-            # {"propQ":['T_lbf', 'eta_drive', 'Ib'],
-            #  "Uinf_mps":np.linspace(0, 45, n), 
-            #  "t_s": np.linspace(0, 300, n), 
-            #  "h_m":50, 
-            #  "dT":100,
-            #  "plot":True},
-            #  {"propQ":"eta_drive",
-            #  "Uinf_mph":np.linspace(0, 45, n), 
-            #  "Voc": np.linspace(3.5, 4.2, n), 
-            #  "h_ft":50, 
-            #  "dT":100, 
-            #  "plot":plot},
-            # {"propQ":"eta_drive",
-            #  "Uinf_fps":50.0, 
-            #  "Voc": np.linspace(3.5, 4.2, n), 
-            #  "h_ft":50, 
-            #  "dT":np.linspace(20, 100, n), 
-            #  "plot":plot},
 
-        # todo: implement unittests to check 
+class TestRuntimes(unittest.TestCase):
+    def setUp(self):
+        self.design = PointDesign()
+        self.design.Motor('C-4130/20', nmot = 1)
+        self.design.Battery('Gaoneng_8S_3300')
+        self.design.Prop('18x12E')
+    
+    def test_runtime_plot(self):
+        plot = True
+        # self.design.Runtimes()
+        # self.design.Runtimes(CD = 0.03)
+        self.design.Runtimes(CD = 0.03, Sw_ft2 = 6)
+
 
 if __name__ == '__main__':
     unittest.main()
