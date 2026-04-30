@@ -480,15 +480,18 @@ class PointDesign:
     def shortenerror(self):
         return(None)
     
-    def Runtimes(self, Uinf_units = 'mph', t_units = 's',
+    def RuntimePlot(self, Uinf_units = 'mph', t_units = 's',
                 h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
                 CD = None, Sw_ft2 = None, Sw_m2 = None,
-                t_limit = False,
-                plot = True):
+                t_limit = False, t_target = False,
+                plot = True, verbose = True):
         """
         Creates a plot of maximum runtimes against Uinf for a variety of throttles
 
         t_limit limits the runtimes shown on the plot
+        t_target (a target runtime) adds an indicating line on the plot
+            and additionally, if verbose == True,
+            the throttle% and velocity needed for the specified runtime are printed to the console
 
         Uinf_units can be any of the following strings: 
             'mph' (miles per hour; DEFAULT) 
@@ -508,6 +511,7 @@ class PointDesign:
                 or rho_slugft3  (air density, slugs/ft3)
                 or rho_lbft3    (air density, lbm/ft3)
 
+        Outputs 3 1D arrays of velocities, throttles, and runtimes (with corresponding indices)
         """
         if exactly_one_defined(h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3) == False:
             raise ValueError("Please input only one altitude/air density out of h_m, h_ft, rho_kgm3, rho_slugft3, rho_lbft3")
@@ -554,6 +558,9 @@ class PointDesign:
             t_m = 1
         elif t_units == 'hr':
             t_hr = 1
+        else:
+            raise ValueError('t_units not recognized! Please choose one of: s, m, hr')
+        dT = 100 # dT needs to exist for conversion to work right
         _, _, rho, h, _, _, self.unit_idxs = input_conversion(Uinf_mps, Uinf_mph, Uinf_fps, Uinf_kmh, Uinf_kt,
                         dT,
                         h_m, h_ft, rho_kgm3, rho_lbft3, rho_slugft3,
@@ -561,7 +568,9 @@ class PointDesign:
         check(rho,      0.0,    np.inf,     "rho") # lambda x: x >= 0.0,
         check(h,        0.0,    np.inf,     "h") # lambda x: x >= 0.0,
 
-        return(RuntimePlot(self, rho = rho, h = h, CD = CD, Sw = Sw, plot = plot, t_limit=t_limit))
+        return(RuntimePlotFunc(self, rho = rho, h = h, CD = CD, Sw = Sw, 
+                               plot = plot, verbose = verbose,
+                               t_limit = t_limit, t_target = t_target))
 
         
 #%%

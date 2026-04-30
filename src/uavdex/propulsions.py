@@ -1917,15 +1917,12 @@ def MaxUinf(self, dT, rho, Voc, Uinfupper = 343, Uinflower = 0):
     Uinfmax = bisectionBase(Uinflower, Uinfupper, residualfunc, args)
     return(Uinfmax)
 
-def RuntimePlot(self, rho = None, h = None, CD = None, Sw = None, 
-                plot = True, t_limit = False, n = 200):
+def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None, 
+                plot = True, t_limit = False, t_target = False, verbose = False, n = 200):
     """
-    Plot contour lines of throttle (from 30-100) against a t vs V design space
+    Plot contour lines of throttle against a t vs V design space
 
-    TODO: lets figure out the structure
-    - define the prop system
-    - input h
-    - find end times at maxds
+    Best for finding maximum runtime of some system vs V and dT
     """
     global _show_plots
 
@@ -1945,22 +1942,8 @@ def RuntimePlot(self, rho = None, h = None, CD = None, Sw = None,
         else:
             rho1 = rho
 
-    Vocmax = VocFuncBase(1.0, self.batt_type_int)
-
-    # numthrots = 150
     dTrange = np.linspace(0.2, 1.0, 9)
-    # runtime_grid = np.zeros((numthrots, n))
-    # Ib_grid = np.zeros((numthrots, n))
-    # Uinf_grid = np.zeros((numthrots, n))
-    # dT_grid = np.tile(dTrange, (n, 1)).T
-    # dT_pts = []
-    # runtime_pts = []
-    # Uinf_pts = []
-    # T_D_pts = []
-    # if Sw is not None and CD is not None:
-    #     T_D_grid = np.zeros((numthrots, n))
-
-    # full max 
+    Vocmax = VocFuncBase(1.0, self.batt_type_int)
     Uinfmax = MaxUinf(self, 1.0, rho1, Vocmax)
     Uinfs = np.linspace(0, Uinfmax, n)
 
@@ -1968,8 +1951,7 @@ def RuntimePlot(self, rho = None, h = None, CD = None, Sw = None,
     T_D_runtimes = []
     Uinf_plot = []
     runtime_plot = []
-
-    fig, ax = plt.subplots(num=None, layout="constrained")
+    dT_plot = []
     for i, dT in enumerate(dTrange): # hardcoded 20-100% throttle
         Voc = VocFuncBase(1.0-self.ds/100, self.batt_type_int)
         data = np.zeros((n, len(propQshort)))
@@ -1981,8 +1963,7 @@ def RuntimePlot(self, rho = None, h = None, CD = None, Sw = None,
         runtimes = (self.ds/100)*(3.6*self.CB*self.np_batt)/Ibs[Ibs > 0]
         runtime_plot.append(runtimes)
         Uinf_plot.append(Uinfs[Ibs > 0])
-        # ax.plot(Uinfs[Ibs > 0], runtimes, label = f'dT = {dT*100:.0f}%') # TODO: FIX UNIT CONVERSION 
-        
+        dT_plot.append(np.array([dT]*runtimes.size))
         if Sw is not None and CD is not None:
             Ds = 0.5*rho1*(Uinfs[Ibs > 0]**2)*CD*Sw
             diff = T_Ns - Ds
@@ -1994,42 +1975,72 @@ def RuntimePlot(self, rho = None, h = None, CD = None, Sw = None,
             runtime_TD = np.interp(Uinf_TD, Uinf_pair, runtimes[sign_changes[0]:sign_changes[0]+2])
             T_D_runtimes.append(runtime_TD)
 
+    # now convert everything back to whatever original velocity or altitude/air density units were used
     for k in range(len(Uinf_plot)):
-        ax.plot(Uinf_plot[k], runtime_plot[k], '-', color = 'k')#, label = f'dT = {dTrange[k]*100:.0f}%')
-        ax.annotate(f'{dTrange[k]*100:.0f}%', (-5, runtime_plot[k][0]))
-    ax.plot(T_D_Uinfs, T_D_runtimes, "--", color = '#cc0000') # TODO fix unit conversion for velocity
+        _, _, runtime_plot[k], Uinf_plot[k], dT_plot[k], rho, h = reverse_input_conversion(0.5, None, runtime_plot[k], Uinf_plot[k], dT_plot[k], rho, h, self.unit_idxs)
+        if Sw is not None and CD is not None:
+            _, _, T_D_runtimes[k], T_D_Uinfs[k], _, _, _ = reverse_input_conversion(0.5, None, T_D_runtimes[k], T_D_Uinfs[k], 0.5, rho, h, self.unit_idxs)
 
-    # extend velocity limit for annotations
-    plt.xlim(left = ax.get_xlim()[0] - 5)
+    if plot:
+        fig, ax = plt.subplots(num=None, layout="constrained")
+        for k in range(len(Uinf_plot)):
+            ax.plot(Uinf_plot[k], runtime_plot[k], '-', color = 'k') #, label = f'dT = {dTrange[k]*100:.0f}%')
+            ax.annotate(f'{dT_plot[k][0]:.0f}%', (-0.1*ax.get_xlim()[1], runtime_plot[k][0]))
+        ax.plot(T_D_Uinfs, T_D_runtimes, "--", color = '#cc0000') # TODO fix unit conversion for velocity
 
-    # ax.scatter(Uinf_pts, runtime_pts, c=dT_pts)
-    if Sw is not None and CD is not None:
-        dummyforlegend = plt.plot([], [],color='#cc0000', marker = 'None',
-                                    linestyle='--', label='T = D')
-        plt.legend()
-    # TODO: FIX UNIT CONVERSION 
-    plt.ylabel('Runtime (s)')
-    plt.xlabel('Velocity (m/s)')
+        # extend velocity limit for annotations
+        plt.xlim(left = ax.get_xlim()[0] - 0.1*ax.get_xlim()[1])
 
-    # title string
-    if self.nmot > 1:
-        extra = 's'
-    else:
-        extra = ''
-    # parts = []
-    # validx = 0
-    # for idx in const_idxs:
-    #     parts.append(f"{FullInputNamesShort[idx]} = {const_vals[validx]:.4g} {FullInputUnits[idx]}")
-    #     validx += 1
-    # title_str = ", ".join(parts)
+        if t_target:
+            ax.axhline(t_target, linestyle = '--', color = 'orange')
 
-    # TODO: ADD ALTITUDE/AIR DENSITY INPUT TO TITLE STRING!
-    plt.title(f'\n{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery')
+        # ax.scatter(Uinf_pts, runtime_pts, c=dT_pts)
+        if Sw is not None and CD is not None:
+            dummyforlegend = plt.plot([], [],color='#cc0000', marker = 'None',
+                                        linestyle='--', label='T = D')
+            plt.legend()
+        # TODO: FIX UNIT CONVERSION 
 
-    if t_limit:
-        ax.set_ylim([0, t_limit])
-    if not _show_plots:
-        atexit.register(plt.show)
-        _show_plots = True
+        plt.xlabel(FullInputNames[self.unit_idxs[1]]) 
+        plt.ylabel(FullInputNames[self.unit_idxs[0]])
 
-    return(15.0) # TODO: return the grid correctly
+        # title string
+        if self.nmot > 1:
+            extra = 's'
+        else:
+            extra = ''
+
+        # const_idxs = get_const_idx(np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
+        const_vals = get_const_vals(np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
+        # parts = []
+        # validx = 0
+        # for idx in const_idxs:
+        #     parts.append(f"{FullInputNamesShort[idx]} = {const_vals[validx]:.4g} {FullInputUnits[idx]}")
+        #     validx += 1
+        # title_str = ", ".join(parts)
+        title_str = f"{FullInputNamesShort[self.unit_idxs[3]]} = {const_vals[0]:.4g} {FullInputUnits[self.unit_idxs[3]]}"
+
+        # TODO: ADD ALTITUDE/AIR DENSITY INPUT TO TITLE STRING!
+        plt.title(f'{title_str}\n{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery')
+
+        if t_limit:
+            ax.set_ylim([0, t_limit])
+        if not _show_plots:
+            atexit.register(plt.show)
+            _show_plots = True
+
+    if t_target:
+        if verbose:
+            print(f'For {t_target}s runtime:') # TODO: units
+            for k in range(len(Uinf_plot)):
+                print(f'  For dT = {dTrange[k]:.0f}%:')
+                # find the velocities that yield t_limit
+                diff = runtime_plot[k]-t_target
+                sign_changes = np.where(np.diff(np.sign(diff)) != 0)[0]
+                for idx in sign_changes:
+                    Uinf_pair = Uinf_plot[k][idx:idx+2]
+                    TD_pair = diff[idx:idx+2]
+                    Uinf_TD = np.interp(0.0, TD_pair, Uinf_pair)
+                    print(f'    {Uinf_TD:.1f}') # add units
+    
+    return(Uinf_plot, dT_plot, runtime_plot) # TODO: return the grid correctly

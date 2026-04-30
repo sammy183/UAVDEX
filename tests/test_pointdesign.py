@@ -386,11 +386,11 @@ class TestRuntimes(unittest.TestCase):
         self.design = PointDesign()
         self.design.Motor('C-4130/20', nmot = 2)
         self.design.Battery('Gaoneng_8S_3300')
-        self.design.Prop('16x10E')
+        self.design.Prop('22x12E')
     
     def test_runtime_plot(self):
-        self.design.Runtimes(h_ft = 50)
-        self.design.Runtimes(h_m = 50, CD = 0.05, Sw_ft2 = 9)
+        self.design.RuntimePlot(Uinf_units = 'fps', t_units = 'hr', h_ft = 50, t_limit = 500, plot = True)
+        self.design.RuntimePlot(Uinf_units = 'mph', t_units = 's', h_m = 50, CD = 0.05, Sw_ft2 = 9, t_target = 450, t_limit = 500, plot = True)
 
         # simpler to keep it as a semi-contour plot
         # self.design.ContourPlot(propQ = ['T_lbf', 'Ib', 'runtime'],
