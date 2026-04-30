@@ -1025,8 +1025,8 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
         return([0.0]*len(propQshort))
     
     _, J, CP, Q, Im, Ib, Vb, Vm = SimpleRPMeqsBase_Voc(RPM, Voc, Uinf, dT, rho, eta_c, eta_g, *args)
-    # if CP == 0.0:
-    #     return([0.0]*len(propQshort))
+    if CP == 0.0:
+        return([0.0]*len(propQshort))
     CT = CTBase(RPM, J, rpm_list, coef_numba_prop_data) 
     Ic = Ib/nmot 
     Vc = Vb 
@@ -1947,13 +1947,13 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
     Uinfmax = MaxUinf(self, 1.0, rho1, Vocmax)
     Uinfs = np.linspace(0, Uinfmax, n)
 
-    T_D_Uinfs = []
-    T_D_runtimes = []
-    Uinf_plot = []
-    runtime_plot = []
-    dT_plot = []
+    T_D_Uinfs       = []
+    T_D_runtimes    = []
+    Uinf_plot       = []
+    runtime_plot    = []
+    dT_plot         = []
     for i, dT in enumerate(dTrange): # hardcoded 20-100% throttle
-        Voc = VocFuncBase(1.0-self.ds/100, self.batt_type_int)
+        Voc = VocFuncBase(0.7, self.batt_type_int) # higher Voc gives a more conservative estimate, use 3.8 to be slightly on the safer side
         data = np.zeros((n, len(propQshort)))
         for j, Uinfspec in enumerate(Uinfs):
             outs = SimplifiedRPMBase_Voc(Uinfspec, dT, rho1, Voc, *args)
@@ -1977,15 +1977,17 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
 
     # now convert everything back to whatever original velocity or altitude/air density units were used
     for k in range(len(Uinf_plot)):
-        _, _, runtime_plot[k], Uinf_plot[k], dT_plot[k], rho, h = reverse_input_conversion(0.5, None, runtime_plot[k], Uinf_plot[k], dT_plot[k], rho, h, self.unit_idxs)
+        _, _, runtime_plot[k], Uinf_plot[k], dT_plot[k], _, _ = reverse_input_conversion(None, None, runtime_plot[k], Uinf_plot[k], dT_plot[k], rho, h, self.unit_idxs)
         if Sw is not None and CD is not None:
-            _, _, T_D_runtimes[k], T_D_Uinfs[k], _, _, _ = reverse_input_conversion(0.5, None, T_D_runtimes[k], T_D_Uinfs[k], 0.5, rho, h, self.unit_idxs)
+            _, _, T_D_runtimes[k], T_D_Uinfs[k], _, _, _ = reverse_input_conversion(None, None, T_D_runtimes[k], T_D_Uinfs[k], 0.5, None, 0.5, self.unit_idxs)
 
+    # run once to convert rho, h
+    _, _, _, _, _, rho, h = reverse_input_conversion(None, None, np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
     if plot:
         fig, ax = plt.subplots(num=None, layout="constrained")
         for k in range(len(Uinf_plot)):
             ax.plot(Uinf_plot[k], runtime_plot[k], '-', color = 'k') #, label = f'dT = {dTrange[k]*100:.0f}%')
-            ax.annotate(f'{dT_plot[k][0]:.0f}%', (-0.1*ax.get_xlim()[1], runtime_plot[k][0]))
+            ax.annotate(f'{dT_plot[k][0]:.0f}%', (-0.1*np.concatenate(Uinf_plot).max(), runtime_plot[k][0]))
         ax.plot(T_D_Uinfs, T_D_runtimes, "--", color = '#cc0000') # TODO fix unit conversion for velocity
 
         # extend velocity limit for annotations
@@ -1999,7 +2001,6 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
             dummyforlegend = plt.plot([], [],color='#cc0000', marker = 'None',
                                         linestyle='--', label='T = D')
             plt.legend()
-        # TODO: FIX UNIT CONVERSION 
 
         plt.xlabel(FullInputNames[self.unit_idxs[1]]) 
         plt.ylabel(FullInputNames[self.unit_idxs[0]])
@@ -2011,18 +2012,9 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
             extra = ''
 
         # const_idxs = get_const_idx(np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
-        const_vals = get_const_vals(np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
-        # parts = []
-        # validx = 0
-        # for idx in const_idxs:
-        #     parts.append(f"{FullInputNamesShort[idx]} = {const_vals[validx]:.4g} {FullInputUnits[idx]}")
-        #     validx += 1
-        # title_str = ", ".join(parts)
+        const_vals = get_const_vals(None, None, np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
         title_str = f"{FullInputNamesShort[self.unit_idxs[3]]} = {const_vals[0]:.4g} {FullInputUnits[self.unit_idxs[3]]}"
-
-        # TODO: ADD ALTITUDE/AIR DENSITY INPUT TO TITLE STRING!
         plt.title(f'{title_str}\n{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery')
-
         if t_limit:
             ax.set_ylim([0, t_limit])
         if not _show_plots:
@@ -2031,9 +2023,9 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
 
     if t_target:
         if verbose:
-            print(f'For {t_target}s runtime:') # TODO: units
+            print(f'For {FullInputNames[self.unit_idxs[0]]} = {t_target}') # TODO: units
             for k in range(len(Uinf_plot)):
-                print(f'  For dT = {dTrange[k]:.0f}%:')
+                print(f'  For dT = {dT_plot[k][0]:.0f}%:')
                 # find the velocities that yield t_limit
                 diff = runtime_plot[k]-t_target
                 sign_changes = np.where(np.diff(np.sign(diff)) != 0)[0]
@@ -2041,6 +2033,6 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
                     Uinf_pair = Uinf_plot[k][idx:idx+2]
                     TD_pair = diff[idx:idx+2]
                     Uinf_TD = np.interp(0.0, TD_pair, Uinf_pair)
-                    print(f'    {Uinf_TD:.1f}') # add units
+                    print(f'    {Uinf_TD:.1f} {FullInputUnits[self.unit_idxs[1]]}') # add units
     
-    return(Uinf_plot, dT_plot, runtime_plot) # TODO: return the grid correctly
+    return(np.concatenate(Uinf_plot), np.concatenate(dT_plot), np.concatenate(runtime_plot)) # TODO: return the grid correctly

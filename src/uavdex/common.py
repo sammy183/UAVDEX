@@ -122,7 +122,7 @@ class PointDesign:
         batt_name will be "manufacturer_#cellS_capacity"
         i.e. "Gaoneng_8S_3300, MaxAmps_12S_2000"
         
-        discharge is equivalent to 100-SOC in %
+        Discharge (aka depth of discharge, DOD) is equivalent to 100 - SOC in %
         '''
         self.batt_name = batt_name
         self.ds = discharge
@@ -492,7 +492,9 @@ class PointDesign:
         t_target (a target runtime) adds an indicating line on the plot
             and additionally, if verbose == True,
             the throttle% and velocity needed for the specified runtime are printed to the console
-
+        
+        t_limit and t_target must match t_units (or get messed up)!!
+            
         Uinf_units can be any of the following strings: 
             'mph' (miles per hour; DEFAULT) 
             'mps' (meters per second) 
@@ -534,7 +536,6 @@ class PointDesign:
         Uinf_fps = None
         Uinf_kmh = None
         Uinf_kt = None
-        dT = None
         t_s = None
         t_m = None
         t_hr = None

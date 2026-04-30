@@ -384,27 +384,20 @@ class TestContourPlot(unittest.TestCase):
 class TestRuntimes(unittest.TestCase):
     def setUp(self):
         self.design = PointDesign()
-        self.design.Motor('C-4130/20', nmot = 2)
-        self.design.Battery('Gaoneng_8S_3300')
+        self.design.Motor('V8110-170', nmot = 1)
+        self.design.Battery('Gaoneng_8S_3300', discharge = 90)
         self.design.Prop('22x12E')
     
     def test_runtime_plot(self):
-        self.design.RuntimePlot(Uinf_units = 'fps', t_units = 'hr', h_ft = 50, t_limit = 500, plot = True)
-        self.design.RuntimePlot(Uinf_units = 'mph', t_units = 's', h_m = 50, CD = 0.05, Sw_ft2 = 9, t_target = 450, t_limit = 500, plot = True)
+        self.design.RuntimePlot(Uinf_units = 'fps', t_units = 's', 
+                                h_ft = 50, t_limit = 500, 
+                                CD = 0.05, Sw_m2 = 0.87, t_target = 300, 
+                                plot = True)
+        self.design.RuntimePlot(Uinf_units = 'mph', t_units = 's', 
+                        h_ft = 50, t_limit = 500, 
+                        CD = 0.12, Sw_m2 = 0.87, t_target = 300, 
+                        plot = True)
 
-        # simpler to keep it as a semi-contour plot
-        # self.design.ContourPlot(propQ = ['T_lbf', 'Ib', 'runtime'],
-        #                         Uinf_mps = np.linspace(0, 45, 150), 
-        #                         dT = np.linspace(40, 100, 150), 
-        #                         h_m = 50, 
-        #                         t_s = 5,
-        #                         CD = 0.05, Sw_ft2 = 9)
-        # self.design.ContourPlot(propQ = ['T_lbf', 'Ib', 'runtime'],
-        #                         Uinf_mps = np.linspace(0, 45, 150), 
-        #                         dT = np.linspace(40, 100, 150), 
-        #                         h_m = 50, 
-        #                         t_s = 200,
-        #                         CD = 0.05, Sw_ft2 = 9)
 
 if __name__ == '__main__':
     unittest.main()

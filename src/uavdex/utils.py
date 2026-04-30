@@ -171,7 +171,7 @@ def reverse_input_conversion(SOC, Voc, t, Uinf, dT, rho, h, unitconv_idx):
     '''
     
     # conversion factors, matching unitconv_idx inputs
-    convs = [0.01, 1, 1, m2s, hr2m, mph2ms, ft2m, 1, kmh2ms, kt2ms, 1, 1, ft2m, 1, slugcf2kgcm, lbmcf2kgcm]
+    convs = [0.01, 1, 1, m2s, hr2m*m2s, mph2ms, ft2m, 1, kmh2ms, kt2ms, 1, 1, ft2m, 1, slugcf2kgcm, lbmcf2kgcm]
     
     specidx = 0
     if SOC is not None:
