@@ -384,19 +384,19 @@ class TestContourPlot(unittest.TestCase):
 class TestRuntimes(unittest.TestCase):
     def setUp(self):
         self.design = PointDesign()
-        self.design.Motor('V8110-170', nmot = 1)
+        self.design.Motor('C-4130/20', nmot = 2)
         self.design.Battery('Gaoneng_8S_3300', discharge = 90)
-        self.design.Prop('22x12E')
+        self.design.Prop('16x12E')
     
     def test_runtime_plot(self):
         self.design.RuntimePlot(Uinf_units = 'fps', t_units = 's', 
                                 h_ft = 50, t_limit = 500, 
                                 CD = 0.05, Sw_m2 = 0.87, t_target = 300, 
-                                plot = True)
+                                plot = False, verbose = False)
         self.design.RuntimePlot(Uinf_units = 'mph', t_units = 's', 
                         h_ft = 50, t_limit = 500, 
                         CD = 0.12, Sw_m2 = 0.87, t_target = 300, 
-                        plot = True)
+                        plot = False, verbose = False)
 
 
 if __name__ == '__main__':
