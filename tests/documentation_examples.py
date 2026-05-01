@@ -42,6 +42,8 @@ design.Prop('18x12E') 					# add a propeller
 # to control the number of points used in linspace (n = 50 --> ~5s runtime, n = 200 --> ~15s runtime)
 n = 120  
 
+design.RuntimePlot(h_m = 5, CD = 0.03, Sw_m2 = 0.8, t_limit = 500, t_target = 300)
+
 # # ContourPlot (sweeps of velocity and runtime)
 # design.ContourPlot(propQ = ['T_lbf', 'eta_drive', 'Ib'],
 #                    Uinf_mps = np.linspace(0, 45, n), 

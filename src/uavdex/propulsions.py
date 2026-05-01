@@ -2014,7 +2014,7 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
         # const_idxs = get_const_idx(np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
         const_vals = get_const_vals(None, None, np.zeros(3), np.zeros(3), np.zeros(3), rho, h, self.unit_idxs)
         title_str = f"{FullInputNamesShort[self.unit_idxs[3]]} = {const_vals[0]:.4g} {FullInputUnits[self.unit_idxs[3]]}"
-        plt.title(f'{title_str}\n{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery')
+        plt.title(f'{self.nmot} {self.motor_name} motor{extra}, {self.prop_name} propeller{extra}, {self.batt_name} battery\n{title_str}')
         if t_limit:
             ax.set_ylim([0, t_limit])
         if not _show_plots:
