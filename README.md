@@ -352,7 +352,11 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 
 [Add a motor!](https://forms.gle/Jt14APWzoDkF2q7A6)
 
-[Add a battery!](https://forms.gle/Jt14APWzoDkF2q7A6)
+[View Motor Requests](https://docs.google.com/spreadsheets/d/1LX9_Jt2NjQ3xe2EAR_zxnx0EgWg8H8CPUWg_xe8T5W0/edit?usp=sharing)
+
+[Add a battery!](https://forms.gle/bnZtinpAHn9MjufW6)
+
+[View Battery Requests](https://docs.google.com/spreadsheets/d/1q7oTx7wdRQWmP2Pv0jeaQ31t-A7Jn3fa1sz1M3N-MtM/edit?usp=sharing)
 
 <!--
 ### Primary Objects:
