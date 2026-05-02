@@ -153,6 +153,7 @@ from uavdex.VSPcontribution.atmosphere import stdatm1976 as atm
 from uavdex.VSPcontribution.units import n2lb, mph2ms, n2g, n2oz, nm2ftlb
 from uavdex.utils import exactly_one_defined, reverse_input_conversion, get_array_idx, get_const_idx, find_intersections, get_const_vals
 import warnings
+from tqdm import tqdm
 warnings.filterwarnings("ignore", message="Pick support for QuadMesh")
 warnings.filterwarnings("ignore", message="No artists with labels found to put in legend")
 import atexit
@@ -1005,10 +1006,11 @@ def SimplifiedRPMBase_Voc(Uinf, dT, rho, Voc, *args):
     else:
         eta_g = 1.0
         
-    # checking initial feasibility with propeller Jmax
+    # # checking initial feasibility with propeller Jmax
     Jmax = coef_numba_prop_data[:, 0, :].max()
     RPMlowerlimit = np.max([(Uinf*60)/(Jmax*d), rpm_list[0]])
-    if RPMlowerlimit > SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]:
+    calcRPMlowerlimit = SimpleRPMeqsBase_Voc(RPMlowerlimit, Voc, Uinf, dT, rho, eta_c, eta_g, *args)[0]
+    if RPMlowerlimit > calcRPMlowerlimit:
         # print('Propeller data predicts no thrust at specified condition (high advance ratio!)\nReduce Uinf or increase dT, Voc')
         return([0.0]*len(propQshort))
 
@@ -1575,16 +1577,17 @@ def LinePlotFunc(self, propQ = 'T',
     return(PropQs, inputarr)
 
 #%% ContourPlot
-@njit(fastmath=True)
+
+# @njit(fastmath = True)
 def process_contour_loop(Uinf_grid, dT_grid, rho_grid, batt_grid, mode, args):
     '''
     mode 0: Voc or SOC (batt_grid contains Voc values)
     mode 1: t (batt_grid contains t values)
     '''
-    print('Code complied, running...')
+    # print('Code complied, running...')
     rows, cols = Uinf_grid.shape
     output_array = np.zeros((rows, cols, 27)) # TODO: pass the 27 as some variable for the len of propQ
-    for i in range(rows):
+    for i in tqdm(range(rows)):
         for j in range(cols):
             Uinf = Uinf_grid[i, j]
             dT = dT_grid[i, j]
@@ -1660,7 +1663,7 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
     global _show_plots
 
     if verbose:
-        print('Compiling code (please wait ~15s)...')
+        print('Compiling code (please wait ~10s)...')
     
     args = (self.GR, self.rpm_list, self.COEF_NUMBA_PROP_DATA, self.propdiam, 
             self.ns_batt, self.np_batt, self.CB, self.Rb, self.batt_type_int, 
@@ -1838,8 +1841,8 @@ def ContourPlotFunc(self, propQ = 'T_lbf',
             # Tip Mach (Mtip) limit line
             if h is None:
                 # TODO: get alt from rho in stdatm1976 (or specified atmosphere), then get temp from alt
-                print('Currently, cannot plot tip mach limit for rho input, please input h')
-                continue
+                print('Currently, cannot plot tip mach limit for rho input')
+                pass
             else:
                 RPM = output_array[:, :, 6]
                 
@@ -1953,12 +1956,15 @@ def RuntimePlotFunc(self, rho = None, h = None, CD = None, Sw = None,
     runtime_plot    = []
     dT_plot         = []
     for i, dT in enumerate(dTrange): # hardcoded 20-100% throttle
-        Voc = VocFuncBase(0.7, self.batt_type_int) # higher Voc gives a more conservative estimate, use 3.8 to be slightly on the safer side
+        Voc = VocFuncBase(1.0-self.ds/100+0.15, self.batt_type_int) # higher Voc gives a more conservative estimate, should use ~3.8 to be slightly on the safer side
         data = np.zeros((n, len(propQshort)))
         for j, Uinfspec in enumerate(Uinfs):
             outs = SimplifiedRPMBase_Voc(Uinfspec, dT, rho1, Voc, *args)
             data[j, :] = outs
         Ibs = data[:, 21]
+        if not np.any(Ibs):
+            # when the given throttle setting cannot produce any thrust at any velocity
+            continue
         T_Ns = data[:, 0][Ibs > 0]
         runtimes = (self.ds/100)*(3.6*self.CB*self.np_batt)/Ibs[Ibs > 0]
         runtime_plot.append(runtimes)
