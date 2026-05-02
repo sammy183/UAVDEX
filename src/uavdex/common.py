@@ -486,7 +486,7 @@ class PointDesign:
                 h_m = None, h_ft = None, rho_kgm3 = None, rho_slugft3 = None, rho_lbft3 = None,
                 CD = None, Sw_ft2 = None, Sw_m2 = None,
                 t_limit = False, t_target = False,
-                plot = True, verbose = True):
+                plot = True, verbose = False):
         """
         Creates a plot of maximum runtimes against Uinf for a variety of throttles
 
