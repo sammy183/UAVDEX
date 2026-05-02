@@ -125,6 +125,8 @@ class PointDesign:
         Discharge (aka depth of discharge, DOD) is equivalent to 100 - SOC in %
         '''
         self.batt_name = batt_name
+        if discharge > 100:
+            raise ValueError('Battery discharge cannot be greater than 100%!')
         self.ds = discharge
         df = pd.read_csv(path_to_data / 'Batteries.csv')
         try:
