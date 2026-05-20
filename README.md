@@ -346,12 +346,17 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 7. QPROP integration for arbitary propellers
 8. Setup pareto fronts
 
-Have any requests? Submit a ticket on the google form below or open a github issue thread.
-#### TODO: GOOGLE FORM
+##### Have any requests? Open a github issue thread!
 
-Want a propulsion component added to the default package CSV sheets? Request here:
-#### TODO: GOOGLE FORM
+### Want a propulsion component added to the default package CSV sheets? Request here: 
 
+[Add a motor!](https://forms.gle/Jt14APWzoDkF2q7A6)
+
+[View Motor Requests](https://docs.google.com/spreadsheets/d/1LX9_Jt2NjQ3xe2EAR_zxnx0EgWg8H8CPUWg_xe8T5W0/edit?usp=sharing)
+
+[Add a battery!](https://forms.gle/bnZtinpAHn9MjufW6)
+
+[View Battery Requests](https://docs.google.com/spreadsheets/d/1q7oTx7wdRQWmP2Pv0jeaQ31t-A7Jn3fa1sz1M3N-MtM/edit?usp=sharing)
 
 <!--
 ### Primary Objects:
