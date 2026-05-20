@@ -29,6 +29,7 @@ Anaconda is recommended. In anaconda prompt with a desired environment (not base
 ```python
 pip install uavdex
 ```
+If there are problems with installation, don't hesitate to reach out or open a github issues thread!
 
 # PointDesign
 This object allows for calculation of electric aircraft propulsion with *specified components* across the entire flight envelope.
