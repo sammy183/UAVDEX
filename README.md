@@ -22,8 +22,8 @@ The tools to thoughtfully design aircraft should be accessible to all.
 For detailed theory and validation, check out my paper published here:
 **ADD LINK**
 -->
+Here is a [validation paper](Validation/Validation_of_an_accessible_tool_for_component_based_MDAO_of_electric_fixed_wing_UAVs.pdf) for this program (results begin on page 8). Generally expect up to 20\% underprediction of thrust and 10\% overprediction of runtime. Experimental data always preferable.
 
-CAUTION: Validation is currently a work in progress and will be published in a conference paper for AIAA AVIATION 2026.
 # Installation
 Anaconda is recommended. In anaconda prompt with a desired environment (not base) activated, simply run:
 ```python
