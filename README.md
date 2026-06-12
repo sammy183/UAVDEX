@@ -337,6 +337,7 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 - *Spyder*:     Switch plot renderer from inline to QT. If the computer has a 4k screen, the text will be extremely small unless "Tools > Preferences > Application > Interface > Enable Auto High DPI Scaling" is selected. 
 - *Jupyter*:    Displays static plots but it cannot support interactive datatips at this time.
 
+<!--
 ## Future updates
 1. Automatic boundary selection (no input array needed, just specify which variable is the sweep)
 2. Battery resistance near low SOC modeled
@@ -346,6 +347,7 @@ The bounds on these plots occur when the throttle setting and battery voltage ar
 6. Manual switching between UIUC exp data, APC BEMT, and custom data
 7. QPROP integration for arbitary propellers
 8. Setup pareto fronts
+-->
 
 ##### Have any requests? Open a github issue thread!
 
